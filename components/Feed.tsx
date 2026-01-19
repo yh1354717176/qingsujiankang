@@ -14,8 +14,12 @@ interface FeedPost {
   likes: number;
   images?: string[];
   aiAnalysis?: string;
+  streak?: number;
 }
 
+/**
+ * @description 社区动态数据
+ */
 const MOCK_POSTS: FeedPost[] = [
   {
     id: 1,
@@ -25,6 +29,7 @@ const MOCK_POSTS: FeedPost[] = [
     mealType: "午餐",
     calories: 450,
     likes: 124,
+    streak: 30,
     images: [
       "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&auto=format&fit=crop&q=80"
@@ -39,6 +44,7 @@ const MOCK_POSTS: FeedPost[] = [
     mealType: "早餐",
     calories: 380,
     likes: 89,
+    streak: 15,
     images: ["https://images.unsplash.com/photo-1511690656952-34342d5c2895?w=500&auto=format&fit=crop&q=80"],
     aiAnalysis: "经典的训练后补充方案。鸡蛋和牛奶提供了必要的蛋白质，燕麦是优质的慢碳，有助于恢复肌糖原。总体热量适中，营养密度高。如果运动强度较大，可以额外增加一个蛋白。"
   },
@@ -50,15 +56,20 @@ const MOCK_POSTS: FeedPost[] = [
     mealType: "晚餐",
     calories: 200,
     likes: 245,
+    streak: 7,
     images: [],
     aiAnalysis: "虽然热量控制得很低，但200kcal对于晚餐来说略显不足，容易导致夜间饥饿影响睡眠。建议加入一些低脂蛋白质（如虾仁、豆腐）增加饱腹感，同时坚果的优质脂肪对身体很有益，但要注意控制量。"
   }
 ];
 
+/**
+ * @description 社区页面组件
+ */
 export const Feed: React.FC = () => {
   const [selectedPost, setSelectedPost] = useState<FeedPost | null>(null);
   const [viewerImages, setViewerImages] = useState<string[] | null>(null);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
 
   const handleRefresh = async () => {
     return new Promise<void>((resolve) => {
@@ -74,6 +85,19 @@ export const Feed: React.FC = () => {
     setViewerIndex(index);
   };
 
+  const handleLike = (postId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLikedPosts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+      } else {
+        newSet.add(postId);
+      }
+      return newSet;
+    });
+  };
+
   const renderImages = (images: string[], limit = 4) => {
     if (!images || images.length === 0) return null;
 
@@ -83,11 +107,11 @@ export const Feed: React.FC = () => {
     if (count >= 3) gridClass = "grid-cols-3";
 
     return (
-      <div className={`grid ${gridClass} gap-1 rounded-xl overflow-hidden mb-3`}>
+      <div className={`grid ${gridClass} gap-1.5 rounded-2xl overflow-hidden mb-3`}>
         {images.slice(0, limit).map((img, idx) => (
           <div
             key={idx}
-            className={`aspect-square relative ${count === 1 ? 'aspect-video' : ''}`}
+            className={`aspect-square relative ${count === 1 ? 'aspect-video rounded-2xl' : ''}`}
             onClick={(e) => openViewer(images, idx, e)}
           >
             <img src={img} alt="Meal" className="w-full h-full object-cover hover:opacity-90 transition-opacity cursor-zoom-in" />
@@ -102,78 +126,118 @@ export const Feed: React.FC = () => {
     );
   };
 
-  const renderPost = (post: FeedPost, isDetail = false) => (
-    <div
-      key={post.id}
-      className={`bg-white rounded-2xl p-4 shadow-sm border border-gray-100 ${!isDetail ? 'active:scale-[0.99] transition-transform cursor-pointer' : ''}`}
-      onClick={() => !isDetail && setSelectedPost(post)}
-    >
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex gap-3">
-          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 overflow-hidden border border-gray-100">
-            {post.avatar ? (
-              <img src={post.avatar} className="w-full h-full object-cover" />
-            ) : (
-              <Icons.User className="w-6 h-6" />
-            )}
+  const getMealTypeColor = (mealType: string) => {
+    switch (mealType) {
+      case '早餐': return 'from-orange-400 to-amber-500';
+      case '午餐': return 'from-green-400 to-emerald-500';
+      case '晚餐': return 'from-purple-400 to-indigo-500';
+      default: return 'from-blue-400 to-cyan-500';
+    }
+  };
+
+  const renderPost = (post: FeedPost, isDetail = false) => {
+    const isLiked = likedPosts.has(post.id);
+
+    return (
+      <div
+        key={post.id}
+        className={`bg-white rounded-3xl p-5 shadow-sm border border-gray-100 ${!isDetail ? 'active:scale-[0.98] transition-all cursor-pointer hover:shadow-md' : ''}`}
+        onClick={() => !isDetail && setSelectedPost(post)}
+      >
+        {/* Header */}
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex gap-3 items-center">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white overflow-hidden ring-2 ring-white shadow-lg">
+                {post.avatar ? (
+                  <img src={post.avatar} className="w-full h-full object-cover" />
+                ) : (
+                  <Icons.User className="w-6 h-6" />
+                )}
+              </div>
+              {post.streak && post.streak >= 7 && (
+                <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-orange-400 to-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg">
+                  🔥{post.streak}
+                </div>
+              )}
+            </div>
+            <div>
+              <div className="font-bold text-gray-800">{post.userName}</div>
+              <div className="text-xs text-gray-400 flex items-center gap-1.5">
+                <span>{post.time}</span>
+                <span className="w-1 h-1 rounded-full bg-gray-300" />
+                <span className={`bg-gradient-to-r ${getMealTypeColor(post.mealType)} text-transparent bg-clip-text font-medium`}>
+                  {post.mealType}
+                </span>
+              </div>
+            </div>
           </div>
-          <div>
-            <div className="font-bold text-gray-800 text-sm">{post.userName}</div>
-            <div className="text-xs text-gray-400">{post.time} · {post.mealType}</div>
+          <div className="flex items-center gap-1.5 bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-1.5 rounded-full border border-green-100">
+            <Icons.Activity className="w-3.5 h-3.5 text-green-500" />
+            <span className="text-sm font-bold text-green-600">{post.calories}</span>
+            <span className="text-xs text-green-500">kcal</span>
           </div>
         </div>
-        <div className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-          {post.calories} kcal
+
+        {/* Content */}
+        <p className={`text-gray-700 leading-relaxed mb-4 ${!isDetail ? 'line-clamp-3' : ''}`}>
+          {post.content}
+        </p>
+
+        {/* Images */}
+        {post.images && renderImages(post.images, isDetail ? 9 : 3)}
+
+        {/* AI Analysis - Detail View Only */}
+        {isDetail && post.aiAnalysis && (
+          <div className="mt-4 bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-2xl border border-blue-100">
+            <h3 className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <Icons.Activity className="w-3.5 h-3.5 text-white" />
+              </div>
+              AI 营养分析
+            </h3>
+            <p className="text-sm text-blue-900 leading-relaxed">
+              {post.aiAnalysis}
+            </p>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-4">
+          <button
+            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${isLiked
+              ? 'bg-red-50 text-red-500'
+              : 'hover:bg-gray-50 text-gray-400 hover:text-red-400'
+              }`}
+            onClick={(e) => handleLike(post.id, e)}
+          >
+            <Icons.Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+            <span className="text-sm font-medium">{post.likes + (isLiked ? 1 : 0)}</span>
+          </button>
+          {!isDetail && (
+            <span className="text-xs text-gray-300">点击查看详情</span>
+          )}
         </div>
       </div>
-
-      <p className={`text-gray-700 text-sm mb-3 leading-relaxed ${!isDetail ? 'line-clamp-3' : ''}`}>
-        {post.content}
-      </p>
-
-      {post.images && renderImages(post.images, isDetail ? 9 : 3)}
-
-      {/* AI Analysis Section - Only in Detail View */}
-      {isDetail && post.aiAnalysis && (
-        <div className="mt-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
-          <h3 className="text-sm font-bold text-blue-800 mb-2 flex items-center gap-2">
-            <Icons.Activity className="w-4 h-4" />
-            AI 营养分析
-          </h3>
-          <p className="text-sm text-blue-900 leading-relaxed">
-            {post.aiAnalysis}
-          </p>
-        </div>
-      )}
-
-      <div className="flex items-center pt-3 border-t border-gray-50 text-gray-500 mt-2">
-        <button
-          className="flex items-center gap-1.5 hover:text-red-500 transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            // Handle like logic
-          }}
-        >
-          <Icons.Heart className="w-5 h-5" />
-          <span className="text-xs">{post.likes}</span>
-        </button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   // --- Detail View ---
   if (selectedPost) {
     return (
-      <div className="animate-in slide-in-from-right duration-300 bg-gray-50 min-h-full flex flex-col">
-        <div className="bg-blue-600 sticky top-0 z-10 px-4 pt-[calc(env(safe-area-inset-top,24px)+0.75rem)] pb-3 shadow-lg flex items-center gap-4">
-          <button onClick={() => setSelectedPost(null)} className="text-white hover:text-blue-100">
-            <Icons.ChevronRight className="w-6 h-6 rotate-180" />
+      <div className="animate-in slide-in-from-right duration-300 bg-white min-h-full flex flex-col h-full relative z-[60]">
+        {/* Header - Changed to sticky for stable alignment */}
+        <div
+          className="bg-white border-b border-gray-100 sticky top-0 left-0 right-0 z-10 px-4 pb-4 flex items-center gap-4 shadow-sm"
+          style={{ paddingTop: 'max(16px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px))' }}
+        >
+          <button onClick={() => setSelectedPost(null)} className="text-gray-400 hover:text-gray-900 transition-colors p-1">
+            <Icons.ChevronLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-lg font-bold text-white">详情</h1>
+          <h1 className="text-lg font-bold text-gray-900">动态详情</h1>
         </div>
-        <div className="p-4 pb-20">
+        <div className="p-4 pb-20 flex-1 overflow-y-auto">
           {renderPost(selectedPost, true)}
-          {/* Deleted Comments Module */}
         </div>
         {viewerImages && (
           <ImageViewer
@@ -189,31 +253,75 @@ export const Feed: React.FC = () => {
   // --- Feed List View ---
   return (
     <div className="animate-in fade-in duration-500 bg-gray-50 h-full flex flex-col relative">
-      <PullToRefresh onRefresh={handleRefresh} className="h-full overflow-y-auto w-full">
-        <div className="min-h-full">
-          {/* Header */}
-          <div className="bg-blue-600 sticky top-0 z-10 px-4 pt-[calc(env(safe-area-inset-top,24px)+0.75rem)] pb-3 shadow-lg flex items-center justify-between">
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <span className="text-white italic">轻塑</span>社区
+      {/* Fixed Header */}
+      <div
+        className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 fixed top-0 left-0 right-0 z-10 px-5 pb-4 shadow-lg"
+        style={{ paddingTop: 'max(16px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px))' }}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <span className="text-white/90 font-light">轻塑</span>
+              <span>社区</span>
             </h1>
+            <p className="text-blue-200 text-xs mt-0.5">发现健康生活方式</p>
           </div>
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+              <Icons.User className="w-5 h-5 text-white" />
+            </div>
+          </div>
+        </div>
+      </div>
 
+      {/* Spacer */}
+      <div style={{ height: 'max(80px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 80px))' }} className="shrink-0" />
+
+      <PullToRefresh onRefresh={handleRefresh} className="flex-1 overflow-y-auto w-full">
+        <div className="min-h-full">
           {/* Content */}
-          <div className="p-4 space-y-4 pb-20">
+          <div className="px-4 space-y-4 pb-12">
             {/* Banner */}
-            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg mb-6">
-              <h2 className="font-bold text-lg mb-1">分享您的健康生活</h2>
-              <p className="text-blue-100 text-sm mb-3">记录每一餐，和大家一起变瘦变美</p>
-              <div className="flex items-center gap-2 text-xs bg-white/20 w-fit px-3 py-1 rounded-full backdrop-blur-sm">
-                <Icons.Activity className="w-3 h-3" />
-                <span>已有 12,345 人今日打卡</span>
+            <div className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-3xl p-5 text-white shadow-xl relative overflow-hidden mt-2">
+              {/* Decorative elements */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-white/10" />
+              <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-white/10" />
+
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">🔥</span>
+                  <h2 className="font-bold text-xl">分享您的健康生活</h2>
+                </div>
+                <p className="text-white/80 text-sm mb-4">记录每一餐，和大家一起变瘦变美</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm bg-white/20 px-4 py-2 rounded-full">
+                    <Icons.Activity className="w-4 h-4" />
+                    <span className="font-medium">12,345 人今日打卡</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {MOCK_POSTS.map(post => renderPost(post, false))}
+            {/* Posts */}
+            <div className="space-y-4">
+              {MOCK_POSTS.map((post, index) => (
+                <div
+                  key={post.id}
+                  className="animate-in fade-in slide-in-from-bottom duration-500"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  {renderPost(post, false)}
+                </div>
+              ))}
+            </div>
 
-            <div className="text-center text-gray-400 text-xs py-4">
-              没有更多内容了
+            {/* Footer */}
+            <div className="text-center py-6">
+              <div className="inline-flex items-center gap-2 text-gray-400 text-sm">
+                <div className="w-8 h-px bg-gray-200" />
+                <span>已经到底啦</span>
+                <div className="w-8 h-px bg-gray-200" />
+              </div>
             </div>
           </div>
         </div>

@@ -14,6 +14,10 @@ interface HistoryItem {
   calories: number;
 }
 
+/**
+ * @description 个人中心页面组件
+ * @param {ProfileProps} props - 组件属性
+ */
 export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, onNavigateToDate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(user.name);
@@ -21,27 +25,27 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
   const [editAvatar, setEditAvatar] = useState(user.avatar);
   const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load History on mount
   useEffect(() => {
     const items: HistoryItem[] = [];
     for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(`nutriplan_analysis_${user.phoneNumber}_`)) {
-            const date = key.split('_').pop();
-            if (date) {
-                try {
-                    const data: AnalysisResult = JSON.parse(localStorage.getItem(key) || '{}');
-                    if (data.macros) {
-                        items.push({ date, calories: data.macros.calories });
-                    }
-                } catch (e) {
-                    console.error("Error parsing history", e);
-                }
+      const key = localStorage.key(i);
+      if (key && key.startsWith(`nutriplan_analysis_${user.phoneNumber}_`)) {
+        const date = key.split('_').pop();
+        if (date) {
+          try {
+            const data: AnalysisResult = JSON.parse(localStorage.getItem(key) || '{}');
+            if (data.macros) {
+              items.push({ date, calories: data.macros.calories });
             }
+          } catch (e) {
+            console.error("Error parsing history", e);
+          }
         }
+      }
     }
     // Sort by date descending
     items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -76,193 +80,285 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
     setIsEditing(false);
   };
 
+  // 计算统计数据
+  const totalDays = historyList.length;
+  const avgCalories = totalDays > 0
+    ? Math.round(historyList.reduce((sum, item) => sum + item.calories, 0) / totalDays)
+    : 0;
+
+  // --- 历史记录页面 ---
   if (showHistory) {
-      return (
-          <div className="bg-gray-50 min-h-full animate-in slide-in-from-right duration-300">
-             <div className="bg-white sticky top-0 z-10 px-4 py-3 shadow-sm border-b border-gray-100 flex items-center gap-4">
-                <button onClick={() => setShowHistory(false)} className="text-gray-600">
-                    <Icons.ChevronLeft className="w-6 h-6" />
-                </button>
-                <h1 className="text-lg font-bold text-gray-800">历史分析记录</h1>
+    return (
+      <div className="bg-white min-h-full animate-in slide-in-from-right duration-300 h-full flex flex-col relative z-[70]">
+        {/* Header - Changed from fixed to sticky to fix alignment issues */}
+        <div
+          className="bg-white border-b border-gray-100 sticky top-0 left-0 right-0 z-10 px-5 pb-4 flex items-center gap-4 shadow-sm"
+          style={{ paddingTop: 'max(16px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px))' }}
+        >
+          <button onClick={() => setShowHistory(false)} className="text-gray-400 hover:text-gray-900 transition-colors p-1 -ml-1">
+            <Icons.ChevronLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-lg font-bold text-gray-900">历史分析记录</h1>
+        </div>
+
+        <div className="p-4 space-y-3 flex-1 overflow-y-auto">
+          {historyList.length === 0 ? (
+            <div className="text-center text-gray-400 py-16 flex flex-col items-center">
+              <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <Icons.History className="w-10 h-10 opacity-30" />
+              </div>
+              <p className="text-lg font-medium text-gray-500">暂无历史记录</p>
+              <p className="text-sm text-gray-400 mt-1">开始记录您的饮食吧</p>
             </div>
-            <div className="p-4 space-y-3">
-                {historyList.length === 0 ? (
-                    <div className="text-center text-gray-400 py-10 flex flex-col items-center">
-                        <Icons.History className="w-12 h-12 mb-2 opacity-20" />
-                        <p>暂无历史分析记录</p>
+          ) : (
+            historyList.map((item, index) => (
+              <div
+                key={item.date}
+                onClick={() => onNavigateToDate(item.date)}
+                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:scale-[0.98] transition-all hover:shadow-md"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-200">
+                    {item.date.split('-')[2]}
+                  </div>
+                  <div>
+                    <div className="font-bold text-gray-800">{item.date}</div>
+                    <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                      <Icons.Activity className="w-3 h-3" />
+                      点击查看详细报告
                     </div>
-                ) : (
-                    historyList.map(item => (
-                        <div 
-                            key={item.date}
-                            onClick={() => onNavigateToDate(item.date)}
-                            className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:scale-[0.99] transition-transform"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs">
-                                    {item.date.split('-')[2]}
-                                </div>
-                                <div>
-                                    <div className="font-bold text-gray-800">{item.date}</div>
-                                    <div className="text-xs text-gray-400">点击查看详细报告</div>
-                                </div>
-                            </div>
-                            <div className="text-green-600 font-medium text-sm">
-                                {item.calories} kcal
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
-          </div>
-      )
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <div className="text-green-600 font-bold">{item.calories}</div>
+                    <div className="text-[10px] text-gray-400">kcal</div>
+                  </div>
+                  <Icons.ChevronRight className="w-5 h-5 text-gray-300" />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    )
   }
 
+  // --- 主页面 ---
   return (
-    <div className="animate-in slide-in-from-right duration-500 pb-6">
-      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-6 rounded-b-[2.5rem] shadow-lg mb-6 pt-12 text-center relative">
-        <h1 className="text-xl font-bold mb-6">个人中心</h1>
-        
-        {/* Avatar Display */}
+    <div className="animate-in fade-in duration-500 h-full flex flex-col">
+      {/* 顶部渐变区域 */}
+      <div
+        className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white px-6 pb-16 text-center relative overflow-hidden"
+        style={{ paddingTop: 'max(32px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 32px))' }}
+      >
+        {/* 装饰性背景圆 */}
+        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-white/5" />
+        <div className="absolute -bottom-32 -left-20 w-80 h-80 rounded-full bg-white/5" />
+
+        <h1 className="text-lg font-medium opacity-90 mb-8 relative z-10">个人中心</h1>
+
+        {/* Avatar */}
         <div className="relative w-28 h-28 mx-auto mb-4">
-          <div className="w-full h-full rounded-full border-4 border-white/30 overflow-hidden bg-white shadow-xl">
+          <div className="w-full h-full rounded-full border-4 border-white/30 overflow-hidden bg-white shadow-2xl ring-4 ring-white/10">
             {isEditing && editAvatar ? (
-               <img src={editAvatar} alt="Profile" className="w-full h-full object-cover" />
+              <img src={editAvatar} alt="Profile" className="w-full h-full object-cover" />
             ) : user.avatar ? (
               <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-300">
-                <Icons.User className="w-12 h-12" />
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-gray-400">
+                <Icons.User className="w-14 h-14" />
               </div>
             )}
           </div>
           {isEditing && (
-            <button 
+            <button
               onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-0 right-0 bg-white text-blue-600 p-2 rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+              className="absolute bottom-0 right-0 bg-white text-blue-600 p-2.5 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all"
             >
               <Icons.Camera className="w-5 h-5" />
             </button>
           )}
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            className="hidden" 
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
             accept="image/*"
           />
         </div>
 
         {!isEditing && (
-             <h2 className="text-2xl font-bold">{user.name}</h2>
+          <>
+            <h2 className="text-2xl font-bold relative z-10">{user.name}</h2>
+            <p className="text-blue-200 text-sm mt-1 relative z-10">
+              {user.gender === 'male' ? '👨 男' : '👩 女'} · {user.phoneNumber.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}
+            </p>
+          </>
         )}
       </div>
 
-      <div className="px-6 space-y-4">
-        
-        {/* History Entry */}
-        {!isEditing && (
-             <button 
-                onClick={() => setShowHistory(true)}
-                className="w-full bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group active:scale-95 transition-all"
-             >
-                 <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
-                         <Icons.History className="w-5 h-5" />
-                     </div>
-                     <span className="font-bold text-gray-800">历史分析记录</span>
-                 </div>
-                 <Icons.ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
-             </button>
-        )}
+      {/* 内容区域 - 上移覆盖 */}
+      <div className="flex-1 overflow-y-auto -mt-8 relative z-10">
+        <div className="px-4 space-y-4 pb-12">
 
-        {/* Form Fields */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
-            <div className="flex justify-between items-center mb-2">
-                <h3 className="font-bold text-gray-800">基本信息</h3>
-                {!isEditing && (
-                    <button 
-                        onClick={() => setIsEditing(true)}
-                        className="text-blue-600 flex items-center gap-1 text-sm font-medium"
-                    >
-                        <Icons.Edit className="w-4 h-4" />
-                        编辑
-                    </button>
-                )}
-            </div>
-
-            {/* Name */}
-            <div>
-                <label className="text-xs text-gray-400 block mb-1">姓名</label>
-                {isEditing ? (
-                    <input 
-                        type="text" 
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="w-full border-b border-blue-500 py-1 focus:outline-none bg-transparent text-gray-800"
-                    />
-                ) : (
-                    <div className="text-gray-800 font-medium">{user.name}</div>
-                )}
-            </div>
-
-             {/* Gender */}
-             <div>
-                <label className="text-xs text-gray-400 block mb-1">性别</label>
-                {isEditing ? (
-                   <div className="flex gap-4 mt-2">
-                      <button
-                        onClick={() => setEditGender('male')}
-                        className={`px-4 py-2 rounded-lg text-sm border ${editGender === 'male' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-gray-200'}`}
-                      >男</button>
-                      <button
-                        onClick={() => setEditGender('female')}
-                        className={`px-4 py-2 rounded-lg text-sm border ${editGender === 'female' ? 'bg-pink-50 border-pink-500 text-pink-700' : 'border-gray-200'}`}
-                      >女</button>
-                   </div>
-                ) : (
-                    <div className="text-gray-800 font-medium">
-                        {user.gender === 'male' ? '男' : '女'}
-                    </div>
-                )}
-            </div>
-
-            {/* Phone (Read Only) */}
-            <div>
-                <label className="text-xs text-gray-400 block mb-1">手机号码 <span className="text-[10px] text-red-300 ml-1">(不可修改)</span></label>
-                <div className="text-gray-500 font-medium flex items-center gap-2">
-                    <Icons.Phone className="w-4 h-4 opacity-50" />
-                    {user.phoneNumber}
+          {/* 统计卡片 */}
+          {!isEditing && (
+            <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50">
+                  <div className="text-3xl font-bold text-blue-600">{totalDays}</div>
+                  <div className="text-xs text-gray-500 mt-1">累计记录天数</div>
                 </div>
+                <div className="text-center p-3 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50">
+                  <div className="text-3xl font-bold text-green-600">{avgCalories || '-'}</div>
+                  <div className="text-xs text-gray-500 mt-1">日均卡路里</div>
+                </div>
+              </div>
             </div>
-        </div>
+          )}
 
-        {/* Action Buttons */}
-        {isEditing ? (
-             <div className="flex gap-4">
-                 <button 
-                    onClick={handleCancel}
-                    className="flex-1 bg-gray-100 text-gray-600 font-bold py-3.5 rounded-xl active:scale-95 transition-all"
+          {/* 功能菜单 */}
+          {!isEditing && (
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+              {/* 历史记录 */}
+              <button
+                onClick={() => setShowHistory(true)}
+                className="w-full p-4 flex items-center justify-between group active:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                    <Icons.History className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <span className="font-bold text-gray-800 block">历史分析记录</span>
+                    <span className="text-xs text-gray-400">查看过往饮食分析报告</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {historyList.length > 0 && (
+                    <span className="bg-blue-100 text-blue-600 text-xs font-medium px-2 py-1 rounded-full">
+                      {historyList.length}条
+                    </span>
+                  )}
+                  <Icons.ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                </div>
+              </button>
+
+              <div className="h-px bg-gray-100 mx-4" />
+
+              {/* 编辑资料 */}
+              <button
+                onClick={() => setIsEditing(true)}
+                className="w-full p-4 flex items-center justify-between group active:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                    <Icons.Edit className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <span className="font-bold text-gray-800 block">编辑个人资料</span>
+                    <span className="text-xs text-gray-400">修改头像、昵称等信息</span>
+                  </div>
+                </div>
+                <Icons.ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500 transition-colors" />
+              </button>
+            </div>
+          )}
+
+          {/* 编辑表单 */}
+          {isEditing && (
+            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 space-y-6">
+              <div className="flex justify-between items-center pb-4 border-b border-gray-100">
+                <h3 className="font-bold text-gray-800 text-lg">编辑资料</h3>
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="text-sm font-medium text-gray-600 block mb-2">昵称</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50"
+                  placeholder="请输入昵称"
+                />
+              </div>
+
+              {/* Gender */}
+              <div>
+                <label className="text-sm font-medium text-gray-600 block mb-3">性别</label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setEditGender('male')}
+                    className={`flex-1 py-3 rounded-xl border-2 flex items-center justify-center gap-2 font-medium transition-all ${editGender === 'male'
+                      ? 'bg-blue-50 border-blue-500 text-blue-700'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}
+                  >
+                    👨 男
+                  </button>
+                  <button
+                    onClick={() => setEditGender('female')}
+                    className={`flex-1 py-3 rounded-xl border-2 flex items-center justify-center gap-2 font-medium transition-all ${editGender === 'female'
+                      ? 'bg-pink-50 border-pink-500 text-pink-700'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}
+                  >
+                    👩 女
+                  </button>
+                </div>
+              </div>
+
+              {/* Phone (Read Only) */}
+              <div>
+                <label className="text-sm font-medium text-gray-600 block mb-2">
+                  手机号码 <span className="text-xs text-gray-400 font-normal">(不可修改)</span>
+                </label>
+                <div className="w-full border border-gray-200 rounded-xl px-4 py-3 bg-gray-100 text-gray-500 flex items-center gap-2">
+                  <Icons.Phone className="w-4 h-4 opacity-50" />
+                  {user.phoneNumber}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleCancel}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3.5 rounded-xl active:scale-95 transition-all"
                 >
-                    取消
+                  取消
                 </button>
-                <button 
-                    onClick={handleSave}
-                    className="flex-1 bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-2"
+                <button
+                  onClick={handleSave}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
-                    <Icons.Save className="w-5 h-5" />
-                    保存修改
+                  <Icons.Save className="w-5 h-5" />
+                  保存修改
                 </button>
-             </div>
-        ) : (
-            <button 
-                onClick={onLogout}
-                className="w-full bg-red-50 text-red-600 font-bold py-3.5 rounded-xl mt-4 active:scale-95 transition-all flex items-center justify-center gap-2"
+              </div>
+            </div>
+          )}
+
+          {/* 退出登录按钮 */}
+          {!isEditing && (
+            <button
+              onClick={onLogout}
+              className="w-full bg-white hover:bg-red-50 text-red-500 font-bold py-4 rounded-2xl border border-gray-100 shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2"
             >
-                <Icons.LogOut className="w-5 h-5" />
-                退出登录
+              <Icons.LogOut className="w-5 h-5" />
+              退出登录
             </button>
-        )}
+          )}
+
+          {/* 版本信息 */}
+          {!isEditing && (
+            <p className="text-center text-xs text-gray-300 pt-2">
+              轻塑健康 v1.0.0
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

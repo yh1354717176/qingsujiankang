@@ -5,21 +5,30 @@
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorPrimaryDark">#2563EB</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:statusBarColor">#2563EB</item>
     </style>
 
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <!-- 透明状态栏 -->
+        <!-- 沉浸式状态栏：透明 -->
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <!-- 状态栏文字变白 (因为背景是深色/蓝色) -->
+        <!-- 状态栏文字/图标为白色 (因为背景是深色/蓝色) -->
         <item name="android:windowLightStatusBar">false</item>
+        <!-- 允许延伸到刘海/挖孔区域 -->
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <!-- 允许绘制系统栏背景 -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <!-- 关闭半透明遮罩 -->
+        <item name="android:windowTranslucentStatus">false</item>
     </style>
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <item name="android:statusBarColor">#2563EB</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>
