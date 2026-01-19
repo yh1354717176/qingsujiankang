@@ -136,3 +136,20 @@ export const fetchFeed = async () => {
   }
   return response.json();
 };
+
+/**
+ * @description 获取云端用户信息
+ */
+export const fetchUser = async (phoneNumber: string) => {
+  const response = await fetch(`${BASE_URL}/api/fetch-user?phoneNumber=${phoneNumber}`);
+  if (!response.ok) {
+    const errorText = await response.text();
+    try {
+      const errorData = JSON.parse(errorText);
+      throw new Error(errorData.error || `获取用户失败: ${response.status}`);
+    } catch (e) {
+      throw new Error(`获取用户失败 (500)`);
+    }
+  }
+  return response.json();
+};

@@ -9,7 +9,7 @@ import { Feed } from './components/Feed';
 import { CalendarStrip } from './components/CalendarStrip';
 import { ImageViewer } from './components/ImageViewer';
 import { MealType, FoodItem, DayLog, Tab, AnalysisResult, UserProfile } from './types';
-import { analyzeMeals, syncUser, syncMeal, fetchDayData } from './services/geminiService';
+import { analyzeMeals, syncUser, syncMeal, fetchDayData, fetchUser } from './services/geminiService';
 import { compressImage } from './utils/imageHelper';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -131,7 +131,15 @@ const App: React.FC = () => {
     const loadData = async () => {
       if (user) {
         try {
-          // 仅从云端拉取数据
+          // 1. 同步最新的用户信息（如头像、昵称）
+          fetchUser(user.phoneNumber).then(latest => {
+            if (latest && !latest.error) {
+              setUser(latest);
+              localStorage.setItem('currentUserProfile', JSON.stringify(latest));
+            }
+          }).catch(e => console.error("Update profile failed", e));
+
+          // 2. 从云端拉取全天数据
           const cloudData = await fetchDayData(user.phoneNumber, currentDate);
 
           if (cloudData.segments) {

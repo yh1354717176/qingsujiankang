@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { Icons } from './Icons';
 import { fetchHistory } from '../services/geminiService';
+import { compressImage, uploadToImgBB } from '../utils/imageHelper';
 
 interface ProfileProps {
   user: UserProfile;
@@ -26,6 +27,8 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
   const [editAvatar, setEditAvatar] = useState(user.avatar);
   const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,25 +49,51 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
     loadCloudHistory();
   }, [user.phoneNumber]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditAvatar(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        setIsCompressing(true);
+        const compressed = await compressImage(file, 0.6, 400);
+        setEditAvatar(compressed);
+      } catch (err) {
+        console.error("Failed to compress image", err);
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
-  const handleSave = () => {
-    onUpdateUser({
-      ...user,
-      name: editName,
-      gender: editGender,
-      avatar: editAvatar
-    });
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+
+      let finalAvatarUrl = editAvatar;
+
+      // 如果头像还是本地的 Base64（说明是新选的），则上传到 ImgBB
+      if (editAvatar && editAvatar.startsWith('data:image')) {
+        try {
+          finalAvatarUrl = await uploadToImgBB(editAvatar);
+        } catch (uploadErr: any) {
+          console.error("Upload to ImgBB failed:", uploadErr);
+          // 如果上传失败，可以回退到 Base64 或报错（这里为了数据库轻量化建议报错提示用户）
+          throw new Error(`图片云端同步失败: ${uploadErr.message}`);
+        }
+      }
+
+      await onUpdateUser({
+        ...user,
+        name: editName,
+        gender: editGender,
+        avatar: finalAvatarUrl
+      });
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error("Save failed", err);
+      // 如果你的父组件已经有 Toast，可以通过 props 调用，或者这里也弹一个
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -155,8 +184,10 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
 
         {/* Avatar */}
         <div className="relative w-28 h-28 mx-auto mb-4">
-          <div className="w-full h-full rounded-full border-4 border-white/30 overflow-hidden bg-white shadow-2xl ring-4 ring-white/10">
-            {isEditing && editAvatar ? (
+          <div className="w-full h-full rounded-full border-4 border-white/30 overflow-hidden bg-white shadow-2xl ring-4 ring-white/10 flex items-center justify-center">
+            {isCompressing ? (
+              <Icons.Loader className="w-10 h-10 text-blue-500 animate-spin" />
+            ) : isEditing && editAvatar ? (
               <img src={editAvatar} alt="Profile" className="w-full h-full object-cover" />
             ) : user.avatar ? (
               <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
@@ -166,7 +197,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
               </div>
             )}
           </div>
-          {isEditing && (
+          {isEditing && !isCompressing && (
             <button
               onClick={() => fileInputRef.current?.click()}
               className="absolute bottom-0 right-0 bg-white text-blue-600 p-2.5 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all"
@@ -326,10 +357,15 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
                 </button>
                 <button
                   onClick={handleSave}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  disabled={isSaving || isCompressing}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <Icons.Save className="w-5 h-5" />
-                  保存修改
+                  {isSaving ? (
+                    <Icons.Loader className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Icons.Save className="w-5 h-5" />
+                  )}
+                  {isSaving ? "保存中..." : "保存修改"}
                 </button>
               </div>
             </div>
