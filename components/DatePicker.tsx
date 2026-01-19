@@ -114,20 +114,23 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
         setTouchYStart(null);
     };
 
-    // 计算动画样式
+    // 计算动画样式 - 增强版，更明显的滑动效果
     const getCalendarAnimationStyle = (): React.CSSProperties => {
-        const baseStyle: React.CSSProperties = {
-            transition: slideDirection ? 'transform 0.25s ease-out, opacity 0.25s ease-out' : 'none',
-            transform: 'translateX(0)',
-            opacity: 1,
-        };
-
-        if (slideDirection === 'left') {
-            return { ...baseStyle, transform: 'translateX(-8px)', opacity: 0.9 };
-        } else if (slideDirection === 'right') {
-            return { ...baseStyle, transform: 'translateX(8px)', opacity: 0.9 };
+        if (!slideDirection) {
+            return {
+                transform: 'translateX(0) scale(1)',
+                opacity: 1,
+                transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+            };
         }
-        return baseStyle;
+
+        // 滑动中的样式：大幅位移 + 缩放 + 淡出
+        const translateX = slideDirection === 'left' ? '-40px' : '40px';
+        return {
+            transform: `translateX(${translateX}) scale(0.92)`,
+            opacity: 0.2,
+            transition: 'transform 0.2s cubic-bezier(0.4, 0, 1, 1), opacity 0.2s cubic-bezier(0.4, 0, 1, 1)',
+        };
     };
 
     return (
@@ -165,15 +168,22 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
                 {/* 顶部控制 */}
                 <div style={{ padding: '20px 24px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={() => handleMonthChange(-1)} style={{ padding: '8px', color: '#9ca3af' }}>
+                        <button onClick={() => handleMonthChange(-1)} style={{ padding: '8px', color: '#9ca3af', transition: 'transform 0.15s', transform: 'scale(1)' }} onTouchStart={(e) => (e.currentTarget.style.transform = 'scale(0.85)')} onTouchEnd={(e) => (e.currentTarget.style.transform = 'scale(1)')}>
                             <Icons.ChevronLeft className="w-6 h-6" />
                         </button>
                     </div>
-                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827' }}>
+                    <div style={{
+                        fontSize: '18px',
+                        fontWeight: 'bold',
+                        color: '#111827',
+                        transition: 'opacity 0.2s, transform 0.2s',
+                        opacity: slideDirection ? 0.4 : 1,
+                        transform: slideDirection === 'left' ? 'translateX(-10px)' : slideDirection === 'right' ? 'translateX(10px)' : 'translateX(0)'
+                    }}>
                         {year}年 {month + 1}月
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={() => handleMonthChange(1)} style={{ padding: '8px', color: '#9ca3af' }}>
+                        <button onClick={() => handleMonthChange(1)} style={{ padding: '8px', color: '#9ca3af', transition: 'transform 0.15s', transform: 'scale(1)' }} onTouchStart={(e) => (e.currentTarget.style.transform = 'scale(0.85)')} onTouchEnd={(e) => (e.currentTarget.style.transform = 'scale(1)')}>
                             <Icons.ChevronRight className="w-6 h-6" />
                         </button>
                     </div>
