@@ -23,10 +23,17 @@ const COLORS = ['#FF8042', '#00C49F', '#FFBB28'];
 
 const App: React.FC = () => {
   // --- Auth State ---
-  const [user, setUser] = useState<UserProfile | null>(() => {
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  // 初次加载时尝试恢复会话 (仍然保留账号的基础 Phone 存储以便自动登录)
+  useEffect(() => {
     const stored = localStorage.getItem('currentUserProfile');
-    return stored ? JSON.parse(stored) : null;
-  });
+    if (stored) {
+      setUser(JSON.parse(stored));
+    }
+    setIsInitialLoading(false);
+  }, []);
 
   // --- State ---
   const [activeTab, setActiveTab] = useState<Tab>('feed'); // Default to Feed
@@ -117,15 +124,11 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       if (user) {
-        const dataKey = `nutriplan_data_${user.phoneNumber}_${currentDate}`;
-        const analysisKey = `nutriplan_analysis_${user.phoneNumber}_${currentDate}`;
-        const historyKey = `nutriplan_history_${user.phoneNumber}`;
-
         try {
-          // 尝试从云端拉取数据
+          // 仅从云端拉取数据
           const cloudData = await fetchDayData(user.phoneNumber, currentDate);
 
-          if (cloudData.segments && cloudData.segments.length > 0) {
+          if (cloudData.segments) {
             const newLog: DayLog = {
               [MealType.BREAKFAST]: [],
               [MealType.LUNCH]: [],
@@ -136,58 +139,48 @@ const App: React.FC = () => {
               newLog[seg.meal_type as MealType] = seg.food_items;
             });
             setDayLog(newLog);
-            localStorage.setItem(dataKey, JSON.stringify(newLog));
           } else {
-            // 云端没数据才看本地
-            const savedData = localStorage.getItem(dataKey);
-            if (savedData) {
-              setDayLog(JSON.parse(savedData));
-            } else {
-              setDayLog({
-                [MealType.BREAKFAST]: [],
-                [MealType.LUNCH]: [],
-                [MealType.DINNER]: [],
-                [MealType.SNACK]: [],
-              });
-            }
+            setDayLog({
+              [MealType.BREAKFAST]: [],
+              [MealType.LUNCH]: [],
+              [MealType.DINNER]: [],
+              [MealType.SNACK]: [],
+            });
           }
 
           if (cloudData.analysis) {
-            const analysisResult = {
+            setAnalysis({
               macros: cloudData.analysis.macros,
               feedback: cloudData.analysis.feedback,
               mealFeedback: cloudData.analysis.mealFeedback,
               plan: cloudData.analysis.plan
-            };
-            setAnalysis(analysisResult);
-            localStorage.setItem(analysisKey, JSON.stringify(analysisResult));
+            });
           } else {
-            const savedAnalysis = localStorage.getItem(analysisKey);
-            setAnalysis(savedAnalysis ? JSON.parse(savedAnalysis) : null);
+            setAnalysis(null);
           }
         } catch (err) {
-          console.error("Failed to fetch cloud data, using local", err);
-          // Fallback to local
-          const savedData = localStorage.getItem(dataKey);
-          if (savedData) setDayLog(JSON.parse(savedData));
-          const savedAnalysis = localStorage.getItem(analysisKey);
-          if (savedAnalysis) setAnalysis(JSON.parse(savedAnalysis));
+          console.error("Failed to fetch cloud data", err);
+          // 失败时不回退到本地，直接清空或报错
+          setDayLog({
+            [MealType.BREAKFAST]: [],
+            [MealType.LUNCH]: [],
+            [MealType.DINNER]: [],
+            [MealType.SNACK]: [],
+          });
+          setAnalysis(null);
         }
-
-        const savedHistory = localStorage.getItem(historyKey);
-        setFoodHistory(savedHistory ? JSON.parse(savedHistory) : []);
       }
     };
 
     loadData();
   }, [user?.phoneNumber, currentDate]);
 
-  // Save Data on Log Change
+  // 本地存储仅用于极小量的非敏感 UI 记录 (如历史输入补全)
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(`nutriplan_data_${user.phoneNumber}_${currentDate}`, JSON.stringify(dayLog));
+    if (foodHistory.length > 0 && user) {
+      localStorage.setItem(`nutriplan_history_${user.phoneNumber}`, JSON.stringify(foodHistory));
     }
-  }, [dayLog, user, currentDate]);
+  }, [foodHistory, user]);
 
 
   // --- Handlers ---
@@ -313,9 +306,6 @@ const App: React.FC = () => {
     try {
       const result = await analyzeMeals(dayLog, user, currentDate);
       setAnalysis(result);
-      if (user) {
-        localStorage.setItem(`nutriplan_analysis_${user.phoneNumber}_${currentDate}`, JSON.stringify(result));
-      }
     } catch (err: any) {
       setError(err.message || "分析失败，请稍后重试。");
     } finally {
@@ -326,6 +316,7 @@ const App: React.FC = () => {
   // --- Render Helpers ---
 
   const renderTracker = () => {
+    if (isInitialLoading) return null;
     if (!user) return <Auth onLogin={handleLogin} />;
 
     // 计算今日总热量
@@ -448,6 +439,7 @@ const App: React.FC = () => {
   };
 
   const renderAnalysis = () => {
+    if (isInitialLoading) return null;
     if (!user) return <Auth onLogin={handleLogin} />;
 
     if (isAnalyzing) {

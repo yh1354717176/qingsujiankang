@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { UserProfile, AnalysisResult } from '../types';
+import { UserProfile } from '../types';
 import { Icons } from './Icons';
 import { fetchHistory } from '../services/geminiService';
 
@@ -39,26 +39,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
         }
       } catch (err) {
         console.error("Failed to fetch cloud history", err);
-        // Local fallback
-        const items: HistoryItem[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith(`nutriplan_analysis_${user.phoneNumber}_`)) {
-            const date = key.split('_').pop();
-            if (date) {
-              try {
-                const data: AnalysisResult = JSON.parse(localStorage.getItem(key) || '{}');
-                if (data.macros) {
-                  items.push({ date, calories: data.macros.calories });
-                }
-              } catch (e) {
-                console.error("Error parsing history", e);
-              }
-            }
-          }
-        }
-        items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setHistoryList(items);
+        setHistoryList([]);
       }
     };
 
@@ -315,7 +296,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
                   <button
                     onClick={() => setEditGender('female')}
                     className={`flex-1 py-3 rounded-xl border-2 flex items-center justify-center gap-2 font-medium transition-all ${editGender === 'female'
-                      ? 'bg-pink-50 border-pink-500 text-pink-700'
+                      ? 'bg-pink-50 border-ピンク-500 text-pink-700'
                       : 'border-gray-200 text-gray-500 hover:border-gray-300'
                       }`}
                   >
