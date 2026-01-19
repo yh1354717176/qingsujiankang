@@ -14,8 +14,8 @@
         <item name="windowNoTitle">true</item>
         <!-- 透明状态栏 -->
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <!-- 状态栏文字变黑 -->
-        <item name="android:windowLightStatusBar">true</item>
+        <!-- 状态栏文字变白 (因为背景是深色/蓝色) -->
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
 
