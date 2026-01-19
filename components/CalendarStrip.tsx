@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Icons } from './Icons';
-import { DatePicker } from './DatePicker';
 
 interface CalendarStripProps {
   selectedDate: string; // YYYY-MM-DD
@@ -108,13 +107,6 @@ export const CalendarStrip: React.FC<CalendarStripProps> = ({ selectedDate, onSe
 
   return (
     <div className="bg-white px-4 pt-4 pb-4">
-      <DatePicker
-        isOpen={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
-        selectedDate={selectedDate}
-        onSelect={onSelectDate}
-      />
-
       <div className="flex items-center justify-between mb-4 px-1">
         <div className="flex items-baseline gap-1.5">
           <span className="text-xl font-bold text-gray-900">{displayDate.getMonth() + 1}月</span>

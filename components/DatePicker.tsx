@@ -113,16 +113,20 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
     };
 
     return (
-        <div className="fixed inset-0 z-[999] flex flex-col justify-end">
-            {/* 遮罩背景：纯色，不使用模糊以防安卓白屏 */}
+        <div
+            className="fixed inset-0 z-[999] flex flex-col justify-end"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
+        >
+            {/* 遮罩背景：点击关闭 */}
             <div
-                className="absolute inset-0 bg-black/60 transition-opacity"
+                className="absolute inset-0"
                 onClick={onClose}
             />
 
             {/* 选择器卡片 */}
             <div
-                className="relative w-full max-w-md mx-auto bg-white rounded-t-[32px] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 touch-none"
+                className="relative w-full max-w-md mx-auto bg-white rounded-t-[32px] flex flex-col shadow-2xl overflow-hidden"
+                style={{ maxHeight: '90vh' }}
                 onTouchStart={(e) => {
                     e.stopPropagation();
                     handleTouchStart(e);
@@ -130,22 +134,34 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
                 onTouchEnd={handleTouchEnd}
             >
                 {/* 顶部标题栏 */}
-                <div className="px-6 pt-6 pb-2">
+                <div className="px-6 pt-6 pb-2 shrink-0">
                     <div className="flex items-center justify-between">
                         <div className="flex gap-0.5">
-                            <button onClick={() => handleYearChange(-1)} className="p-2 active:bg-gray-100 rounded-lg text-gray-400">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleYearChange(-1); }}
+                                className="p-2 active:bg-gray-100 rounded-lg text-gray-400"
+                            >
                                 <Icons.ChevronsLeft className="w-5 h-5" />
                             </button>
-                            <button onClick={() => handleMonthChange(-1)} className="p-2 active:bg-gray-100 rounded-lg text-gray-400">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleMonthChange(-1); }}
+                                className="p-2 active:bg-gray-100 rounded-lg text-gray-400"
+                            >
                                 <Icons.ChevronLeft className="w-5 h-5" />
                             </button>
                         </div>
                         <span className="text-xl font-bold text-gray-900">{year}年{month + 1}月</span>
                         <div className="flex gap-0.5">
-                            <button onClick={() => handleMonthChange(1)} className="p-2 active:bg-gray-100 rounded-lg text-gray-400">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleMonthChange(1); }}
+                                className="p-2 active:bg-gray-100 rounded-lg text-gray-400"
+                            >
                                 <Icons.ChevronRight className="w-5 h-5" />
                             </button>
-                            <button onClick={() => handleYearChange(1)} className="p-2 active:bg-gray-100 rounded-lg text-gray-400">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleYearChange(1); }}
+                                className="p-2 active:bg-gray-100 rounded-lg text-gray-400"
+                            >
                                 <Icons.ChevronsRight className="w-5 h-5" />
                             </button>
                         </div>
@@ -153,21 +169,21 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
                 </div>
 
                 {/* 星期表头 */}
-                <div className="grid grid-cols-7 px-4">
+                <div className="grid grid-cols-7 px-4 shrink-0">
                     {['日', '一', '二', '三', '四', '五', '六'].map(w => (
                         <div key={w} className="text-center text-[10px] font-bold text-gray-300 py-3">{w}</div>
                     ))}
                 </div>
 
-                {/* 日历网格 - 移除 touch-none 以允许点击，由父容器处理滑动 */}
-                <div className="grid grid-cols-7 px-4 pb-4 select-none">
+                {/* 日历网格 */}
+                <div className="grid grid-cols-7 px-4 pb-4 flex-1 overflow-y-auto no-scrollbar select-none">
                     {generateCalendar().map((d, i) => {
                         const isSelected = d.dateStr === selectedDate;
                         const isToday = d.dateStr === todayStr;
                         return (
                             <button
                                 key={i}
-                                onClick={() => handleDateClick(d)}
+                                onClick={(e) => { e.stopPropagation(); handleDateClick(d); }}
                                 className={`aspect-square flex flex-col items-center justify-center relative rounded-full m-0.5 transition-all
                                     ${isSelected ? 'bg-blue-600 text-white shadow-md' :
                                         isToday ? 'bg-blue-50 text-blue-600 font-bold' :
@@ -188,15 +204,15 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
                 </div>
 
                 {/* 底部操作栏 */}
-                <div className="px-6 pb-8 pt-2 flex gap-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)' }}>
+                <div className="px-6 pb-8 pt-2 flex gap-3 shrink-0" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)' }}>
                     <button
-                        onClick={() => { onSelect(todayStr); onClose(); }}
+                        onClick={(e) => { e.stopPropagation(); onSelect(todayStr); onClose(); }}
                         className="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl text-sm active:bg-gray-200"
                     >
                         回到今天
                     </button>
                     <button
-                        onClick={onClose}
+                        onClick={(e) => { e.stopPropagation(); onClose(); }}
                         className="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl text-sm active:bg-blue-700 shadow-lg shadow-blue-100"
                     >
                         确认

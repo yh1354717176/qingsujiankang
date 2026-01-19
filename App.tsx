@@ -7,6 +7,7 @@ import { Auth } from './components/Auth';
 import { Profile } from './components/Profile';
 import { Feed } from './components/Feed';
 import { CalendarStrip } from './components/CalendarStrip';
+import { DatePicker } from './components/DatePicker';
 import { ImageViewer } from './components/ImageViewer';
 import { MealType, FoodItem, DayLog, Tab, AnalysisResult, UserProfile } from './types';
 import { analyzeMeals, syncUser, syncMeal, fetchDayData, fetchUser } from './services/geminiService';
@@ -403,7 +404,7 @@ const App: React.FC = () => {
           </div>
         }
       >
-        <div className="animate-in fade-in duration-500 min-h-screen flex flex-col bg-gray-50">
+        <div className="flex flex-col min-h-screen bg-gray-50">
           {/* Fixed Header - 延伸到状态栏区域 */}
           <div
             className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white z-10 px-6 pb-8 rounded-b-[2.5rem] shadow-xl overflow-hidden relative"
@@ -599,7 +600,7 @@ const App: React.FC = () => {
           </div>
         }
       >
-        <div className="animate-in slide-in-from-right duration-500 min-h-screen flex flex-col">
+        <div className="flex flex-col min-h-screen">
           {/* Header */}
           <div
             className="bg-blue-600 sticky top-0 left-0 right-0 z-20 px-5 pb-4 shadow-lg flex items-center justify-between"
@@ -879,6 +880,13 @@ const App: React.FC = () => {
           onClose={() => setViewerImages(null)}
         />
       )}
+      {/* Global Date Picker */}
+      <DatePicker
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        selectedDate={currentDate}
+        onSelect={setCurrentDate}
+      />
 
     </div>
   );
