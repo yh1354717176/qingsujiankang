@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 
 interface DatePickerProps {
@@ -32,14 +32,30 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
     const [viewDate, setViewDate] = useState(() => parseSafeDate(selectedDate));
     const [touchStart, setTouchStart] = useState<number | null>(null);
     const [touchYStart, setTouchYStart] = useState<number | null>(null);
+    // 动画相关状态
+    const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+    const [isAnimating, setIsAnimating] = useState(false);
+    const calendarRef = useRef<HTMLDivElement>(null);
 
     const todayStr = new Date().toISOString().split('T')[0];
 
     useEffect(() => {
         if (isOpen) {
             setViewDate(parseSafeDate(selectedDate));
+            setSlideDirection(null);
         }
     }, [isOpen, selectedDate]);
+
+    // 动画结束后重置状态
+    useEffect(() => {
+        if (slideDirection) {
+            const timer = setTimeout(() => {
+                setSlideDirection(null);
+                setIsAnimating(false);
+            }, 250);
+            return () => clearTimeout(timer);
+        }
+    }, [slideDirection]);
 
     // Early return 必须在所有 Hooks 之后
     if (!isOpen) return null;
@@ -71,16 +87,23 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
     };
 
     const handleMonthChange = (offset: number) => {
-        setViewDate(new Date(year, month + offset, 1));
+        if (isAnimating) return; // 防止动画期间重复触发
+        setIsAnimating(true);
+        setSlideDirection(offset > 0 ? 'left' : 'right');
+        // 延迟更新日期，让动画先开始
+        setTimeout(() => {
+            setViewDate(new Date(year, month + offset, 1));
+        }, 50);
     };
 
     const handleTouchStart = (e: React.TouchEvent) => {
+        if (isAnimating) return;
         setTouchStart(e.touches[0].clientX);
         setTouchYStart(e.touches[0].clientY);
     };
 
     const handleTouchEnd = (e: React.TouchEvent) => {
-        if (touchStart === null || touchYStart === null) return;
+        if (touchStart === null || touchYStart === null || isAnimating) return;
         const diffX = touchStart - e.changedTouches[0].clientX;
         const diffY = touchYStart - e.changedTouches[0].clientY;
 
@@ -89,6 +112,22 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
         }
         setTouchStart(null);
         setTouchYStart(null);
+    };
+
+    // 计算动画样式
+    const getCalendarAnimationStyle = (): React.CSSProperties => {
+        const baseStyle: React.CSSProperties = {
+            transition: slideDirection ? 'transform 0.25s ease-out, opacity 0.25s ease-out' : 'none',
+            transform: 'translateX(0)',
+            opacity: 1,
+        };
+
+        if (slideDirection === 'left') {
+            return { ...baseStyle, transform: 'translateX(-8px)', opacity: 0.9 };
+        } else if (slideDirection === 'right') {
+            return { ...baseStyle, transform: 'translateX(8px)', opacity: 0.9 };
+        }
+        return baseStyle;
     };
 
     return (
@@ -147,8 +186,16 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
                     ))}
                 </div>
 
-                {/* 日历网格 */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '0 16px 16px' }}>
+                {/* 日历网格 - 应用动画效果 */}
+                <div
+                    ref={calendarRef}
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(7, 1fr)',
+                        padding: '0 16px 16px',
+                        ...getCalendarAnimationStyle()
+                    }}
+                >
                     {generateCalendar().map((d, i) => {
                         const isSelected = d.dateStr === selectedDate;
                         const isToday = d.dateStr === todayStr;
