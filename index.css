@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #10b981;
+  --color-brand-secondary: #3b82f6;
+}
+
+:root {
+  --app-height: 100vh;
+  color-scheme: light;
+  /* 强制浅色模式，防止手机自动加暗 */
+}
+
+/* 基础重置 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+html,
+body {
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  position: fixed;
+  background-color: #f9fafb !important;
+  /* 强制浅灰色背景 */
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #111827;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+/* 移动端安全区辅助 */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 兼容性辅助：确保 Tailwind 基础样式生效 */
+@layer base {
+  body {
+    @apply antialiased;
+  }
+}
