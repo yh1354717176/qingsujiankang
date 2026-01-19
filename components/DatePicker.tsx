@@ -28,7 +28,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
         }
     };
 
+    // ⚠️ 所有 Hooks 必须在 early return 之前调用，确保调用顺序一致
     const [viewDate, setViewDate] = useState(() => parseSafeDate(selectedDate));
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchYStart, setTouchYStart] = useState<number | null>(null);
+
     const todayStr = new Date().toISOString().split('T')[0];
 
     useEffect(() => {
@@ -37,6 +41,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
         }
     }, [isOpen, selectedDate]);
 
+    // Early return 必须在所有 Hooks 之后
     if (!isOpen) return null;
 
     const year = viewDate.getFullYear();
@@ -68,10 +73,6 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
     const handleMonthChange = (offset: number) => {
         setViewDate(new Date(year, month + offset, 1));
     };
-
-    // 手势支持
-    const [touchStart, setTouchStart] = useState<number | null>(null);
-    const [touchYStart, setTouchYStart] = useState<number | null>(null);
 
     const handleTouchStart = (e: React.TouchEvent) => {
         setTouchStart(e.touches[0].clientX);
