@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Icons } from './Icons';
 import { UserProfile } from '../types';
+import { compressImage } from '../utils/imageHelper';
 
 interface AuthProps {
   onLogin: (profile: UserProfile) => void;
@@ -15,29 +16,40 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [avatar, setAvatar] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatar(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImage(file, 0.6, 400); // 压缩头像
+        setAvatar(compressed);
+      } catch (err) {
+        console.error("Avatar compression failed", err);
+        // Fallback to uncompressed
+        const reader = new FileReader();
+        reader.onloadend = () => setAvatar(reader.result as string);
+        reader.readAsDataURL(file);
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim() && phoneNumber.trim()) {
-      onLogin({
-        name: name.trim(),
-        phoneNumber: phoneNumber.trim(),
-        gender,
-        avatar
-      });
+    if (name.trim() && phoneNumber.trim() && !isSubmitting) {
+      setIsSubmitting(true);
+      try {
+        await onLogin({
+          name: name.trim(),
+          phoneNumber: phoneNumber.trim(),
+          gender,
+          avatar
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -171,11 +183,17 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={!name.trim() || !phoneNumber.trim()}
+                disabled={!name.trim() || !phoneNumber.trim() || isSubmitting}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 active:scale-95 transition-all text-white font-bold py-4 rounded-2xl shadow-xl shadow-blue-200 disabled:shadow-none flex items-center justify-center gap-2 mt-6"
               >
-                <span className="text-lg">开启健康之旅</span>
-                <Icons.ChevronRight className="w-5 h-5" />
+                {isSubmitting ? (
+                  <Icons.Loader className="w-6 h-6 animate-spin" />
+                ) : (
+                  <>
+                    <span className="text-lg">开启健康之旅</span>
+                    <Icons.ChevronRight className="w-5 h-5" />
+                  </>
+                )}
               </button>
 
               {/* Terms */}
