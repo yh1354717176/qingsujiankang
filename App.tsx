@@ -384,7 +384,7 @@ const App: React.FC = () => {
 
     return (
       <div className="animate-in slide-in-from-right duration-500">
-        <div className="bg-white sticky top-0 z-10 p-4 shadow-sm border-b border-gray-100 flex items-center justify-between">
+        <div className="bg-white sticky top-0 z-10 p-4 pt-12 shadow-sm border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800">AI 分析报告</h2>
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400 font-normal">{currentDate}</span>

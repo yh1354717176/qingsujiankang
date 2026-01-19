@@ -37,8 +37,6 @@ body {
   /* 强制浅灰色背景 */
   font-family: system-ui, -apple-system, sans-serif;
   color: #111827;
-  /* 全局增加顶部安全区内边距，如果没有刘海屏则默认增加 24px */
-  padding-top: env(safe-area-inset-top, 24px);
 }
 
 #root {
