@@ -9,7 +9,7 @@ import { Feed } from './components/Feed';
 import { CalendarStrip } from './components/CalendarStrip';
 import { ImageViewer } from './components/ImageViewer';
 import { MealType, FoodItem, DayLog, Tab, AnalysisResult, UserProfile } from './types';
-import { analyzeMeals } from './services/geminiService';
+import { analyzeMeals, syncUser, syncMeal, fetchDayData } from './services/geminiService';
 import { compressImage } from './utils/imageHelper';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -115,52 +115,71 @@ const App: React.FC = () => {
 
   // Load Data on User Change or Date Change
   useEffect(() => {
-    if (user) {
-      const dataKey = `nutriplan_data_${user.phoneNumber}_${currentDate}`;
-      const analysisKey = `nutriplan_analysis_${user.phoneNumber}_${currentDate}`;
-      const historyKey = `nutriplan_history_${user.phoneNumber}`;
+    const loadData = async () => {
+      if (user) {
+        const dataKey = `nutriplan_data_${user.phoneNumber}_${currentDate}`;
+        const analysisKey = `nutriplan_analysis_${user.phoneNumber}_${currentDate}`;
+        const historyKey = `nutriplan_history_${user.phoneNumber}`;
 
-      // Fallback for legacy data (without date suffix) - Migrate if needed or just load for today
-      const legacyDataKey = `nutriplan_data_${user.phoneNumber}`;
-      const today = new Date().toISOString().split('T')[0];
+        try {
+          // 尝试从云端拉取数据
+          const cloudData = await fetchDayData(user.phoneNumber, currentDate);
 
-      let savedData = localStorage.getItem(dataKey);
+          if (cloudData.segments && cloudData.segments.length > 0) {
+            const newLog: DayLog = {
+              [MealType.BREAKFAST]: [],
+              [MealType.LUNCH]: [],
+              [MealType.DINNER]: [],
+              [MealType.SNACK]: [],
+            };
+            cloudData.segments.forEach((seg: any) => {
+              newLog[seg.meal_type as MealType] = seg.food_items;
+            });
+            setDayLog(newLog);
+            localStorage.setItem(dataKey, JSON.stringify(newLog));
+          } else {
+            // 云端没数据才看本地
+            const savedData = localStorage.getItem(dataKey);
+            if (savedData) {
+              setDayLog(JSON.parse(savedData));
+            } else {
+              setDayLog({
+                [MealType.BREAKFAST]: [],
+                [MealType.LUNCH]: [],
+                [MealType.DINNER]: [],
+                [MealType.SNACK]: [],
+              });
+            }
+          }
 
-      // Migration logic: If no data for today, check legacy data and if current date is today, use it.
-      if (!savedData && currentDate === today) {
-        const legacyData = localStorage.getItem(legacyDataKey);
-        if (legacyData) {
-          savedData = legacyData;
-          // Save it to new format
-          localStorage.setItem(dataKey, legacyData);
+          if (cloudData.analysis) {
+            const analysisResult = {
+              macros: cloudData.analysis.macros,
+              feedback: cloudData.analysis.feedback,
+              mealFeedback: cloudData.analysis.mealFeedback,
+              plan: cloudData.analysis.plan
+            };
+            setAnalysis(analysisResult);
+            localStorage.setItem(analysisKey, JSON.stringify(analysisResult));
+          } else {
+            const savedAnalysis = localStorage.getItem(analysisKey);
+            setAnalysis(savedAnalysis ? JSON.parse(savedAnalysis) : null);
+          }
+        } catch (err) {
+          console.error("Failed to fetch cloud data, using local", err);
+          // Fallback to local
+          const savedData = localStorage.getItem(dataKey);
+          if (savedData) setDayLog(JSON.parse(savedData));
+          const savedAnalysis = localStorage.getItem(analysisKey);
+          if (savedAnalysis) setAnalysis(JSON.parse(savedAnalysis));
         }
-      }
 
-      if (savedData) {
-        setDayLog(JSON.parse(savedData));
-      } else {
-        setDayLog({
-          [MealType.BREAKFAST]: [],
-          [MealType.LUNCH]: [],
-          [MealType.DINNER]: [],
-          [MealType.SNACK]: [],
-        });
+        const savedHistory = localStorage.getItem(historyKey);
+        setFoodHistory(savedHistory ? JSON.parse(savedHistory) : []);
       }
+    };
 
-      const savedAnalysis = localStorage.getItem(analysisKey);
-      if (savedAnalysis) {
-        setAnalysis(JSON.parse(savedAnalysis));
-      } else {
-        setAnalysis(null);
-      }
-
-      const savedHistory = localStorage.getItem(historyKey);
-      if (savedHistory) {
-        setFoodHistory(JSON.parse(savedHistory));
-      } else {
-        setFoodHistory([]);
-      }
-    }
+    loadData();
   }, [user?.phoneNumber, currentDate]);
 
   // Save Data on Log Change
@@ -176,6 +195,7 @@ const App: React.FC = () => {
   const handleLogin = (profile: UserProfile) => {
     localStorage.setItem('currentUserProfile', JSON.stringify(profile));
     setUser(profile);
+    syncUser(profile); // 同步到云端
     if (activeTab === 'feed') {
       setActiveTab('tracker');
     }
@@ -184,6 +204,7 @@ const App: React.FC = () => {
   const handleUpdateUser = (updatedProfile: UserProfile) => {
     setUser(updatedProfile);
     localStorage.setItem('currentUserProfile', JSON.stringify(updatedProfile));
+    syncUser(updatedProfile); // 同步到云端
   };
 
   const handleLogout = () => {
@@ -245,10 +266,16 @@ const App: React.FC = () => {
       images: index === 0 ? selectedImages : undefined // Attach images to the first item
     }));
 
-    setDayLog(prev => ({
-      ...prev,
-      [currentMealType]: [...prev[currentMealType], ...newItems]
-    }));
+    const updatedLog = {
+      ...dayLog,
+      [currentMealType]: [...dayLog[currentMealType], ...newItems]
+    };
+    setDayLog(updatedLog);
+
+    // 同步到云端
+    if (user) {
+      syncMeal(user.phoneNumber, currentDate, currentMealType, updatedLog[currentMealType]);
+    }
 
     setIsModalOpen(false);
   };
@@ -264,10 +291,17 @@ const App: React.FC = () => {
 
   const handleRemoveFoods = (type: MealType, ids: string[]) => {
     const idSet = new Set(ids);
-    setDayLog(prev => ({
-      ...prev,
-      [type]: prev[type].filter(item => !idSet.has(item.id))
-    }));
+    const updatedMeals = dayLog[type].filter(item => !idSet.has(item.id));
+    const updatedLog = {
+      ...dayLog,
+      [type]: updatedMeals
+    };
+    setDayLog(updatedLog);
+
+    // 同步到云端
+    if (user) {
+      syncMeal(user.phoneNumber, currentDate, type, updatedMeals);
+    }
   };
 
   const handleAnalyze = async () => {
@@ -277,7 +311,7 @@ const App: React.FC = () => {
     setAnalysis(null);
 
     try {
-      const result = await analyzeMeals(dayLog);
+      const result = await analyzeMeals(dayLog, user, currentDate);
       setAnalysis(result);
       if (user) {
         localStorage.setItem(`nutriplan_analysis_${user.phoneNumber}_${currentDate}`, JSON.stringify(result));

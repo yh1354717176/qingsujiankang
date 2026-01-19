@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile, AnalysisResult } from '../types';
 import { Icons } from './Icons';
+import { fetchHistory } from '../services/geminiService';
 
 interface ProfileProps {
   user: UserProfile;
@@ -30,26 +31,38 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
 
   // Load History on mount
   useEffect(() => {
-    const items: HistoryItem[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(`nutriplan_analysis_${user.phoneNumber}_`)) {
-        const date = key.split('_').pop();
-        if (date) {
-          try {
-            const data: AnalysisResult = JSON.parse(localStorage.getItem(key) || '{}');
-            if (data.macros) {
-              items.push({ date, calories: data.macros.calories });
+    const loadCloudHistory = async () => {
+      try {
+        const cloudHistory = await fetchHistory(user.phoneNumber);
+        if (Array.isArray(cloudHistory)) {
+          setHistoryList(cloudHistory);
+        }
+      } catch (err) {
+        console.error("Failed to fetch cloud history", err);
+        // Local fallback
+        const items: HistoryItem[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(`nutriplan_analysis_${user.phoneNumber}_`)) {
+            const date = key.split('_').pop();
+            if (date) {
+              try {
+                const data: AnalysisResult = JSON.parse(localStorage.getItem(key) || '{}');
+                if (data.macros) {
+                  items.push({ date, calories: data.macros.calories });
+                }
+              } catch (e) {
+                console.error("Error parsing history", e);
+              }
             }
-          } catch (e) {
-            console.error("Error parsing history", e);
           }
         }
+        items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setHistoryList(items);
       }
-    }
-    // Sort by date descending
-    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    setHistoryList(items);
+    };
+
+    loadCloudHistory();
   }, [user.phoneNumber]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

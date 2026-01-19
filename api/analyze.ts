@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
+import sql from "../utils/db";
 
 // Inline types to avoid Vercel module resolution issues
 enum MealType {
@@ -65,7 +66,7 @@ export default async function handler(req: any, res: any) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { log } = req.body as { log: DayLog };
+    const { log, phoneNumber, logDate } = req.body as { log: DayLog, phoneNumber?: string, logDate?: string };
 
     if (!log) {
         return res.status(400).json({ error: 'Missing log data' });
@@ -107,8 +108,32 @@ export default async function handler(req: any, res: any) {
 
         const text = response.text;
         if (!text) throw new Error("No response from AI");
+        const result = JSON.parse(text);
 
-        res.status(200).json(JSON.parse(text));
+        // 如果提供了手机号和日期，则持久化到数据库
+        if (phoneNumber && logDate) {
+            try {
+                const users = await sql`SELECT id FROM qingshu_users WHERE phone_number = ${phoneNumber}`;
+                if (users.length > 0) {
+                    const userId = users[0].id;
+                    await sql`
+                        INSERT INTO qingshu_analysis (user_id, log_date, macros, feedback, meal_feedback, plan)
+                        VALUES (${userId}, ${logDate}, ${JSON.stringify(result.macros)}, ${result.feedback}, ${JSON.stringify(result.mealFeedback)}, ${result.plan})
+                        ON CONFLICT (user_id, log_date)
+                        DO UPDATE SET
+                            macros = EXCLUDED.macros,
+                            feedback = EXCLUDED.feedback,
+                            meal_feedback = EXCLUDED.meal_feedback,
+                            plan = EXCLUDED.plan
+                    `;
+                }
+            } catch (dbError) {
+                console.error("Failed to save analysis to DB:", dbError);
+                // 不阻断返回结果给用户
+            }
+        }
+
+        res.status(200).json(result);
     } catch (error: any) {
         console.error("Gemini Analysis Error:", error);
         res.status(500).json({ error: error.message || 'AI analysis failed' });
