@@ -102,7 +102,7 @@ export default async function handler(req: any, res: any) {
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-1.5-pro", // 使用更稳健的 1.5 Pro 或根据环境切换至 gemini-3-pro
+            model: "gemini-2.5-pro", // 使用更稳健的 1.5 Pro 或根据环境切换至 gemini-3-pro
             contents: `You are a professional nutritionist and weight loss coach. 
       Analyze the following daily food log. 
       Estimate the nutritional values conservatively.
