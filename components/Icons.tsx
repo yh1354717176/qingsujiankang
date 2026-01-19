@@ -28,7 +28,9 @@ import {
   Bell,
   Calendar,
   History,
-  AlertCircle
+  AlertCircle,
+  Check,
+  CheckCircle
 } from 'lucide-react';
 
 export const Icons = {
@@ -60,5 +62,7 @@ export const Icons = {
   Bell,
   Calendar,
   History,
-  AlertCircle
+  AlertCircle,
+  Check,
+  CheckCircle
 };

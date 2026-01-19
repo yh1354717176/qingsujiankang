@@ -351,7 +351,14 @@ const App: React.FC = () => {
     try {
       const result = await analyzeMeals(dayLog, user, currentDate);
       setAnalysis(result);
-      showToast("分析完成！", 'success');
+
+      // 检查是否有数据库保存错误
+      if ((result as any)._dbError) {
+        showToast(`分析完成，但保存失败: ${(result as any)._dbError}`);
+        console.warn("DB Save Error:", (result as any)._dbError);
+      } else {
+        showToast("分析完成！", 'success');
+      }
     } catch (err: any) {
       setError(err.message || "分析失败，请稍后重试。");
       showToast("分析失败，请稍后重试。");
@@ -513,10 +520,49 @@ const App: React.FC = () => {
 
     if (isAnalyzing) {
       return (
-        <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-          <Icons.Loader className="w-12 h-12 text-blue-600 animate-spin mb-4" />
-          <h2 className="text-xl font-bold text-gray-800">正在分析您的饮食...</h2>
-          <p className="text-gray-500 mt-2">Gemini AI 正在计算热量并制定计划</p>
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 px-6">
+          {/* 装饰背景 */}
+          <div className="absolute top-20 left-10 w-32 h-32 bg-blue-100/50 rounded-full blur-3xl" />
+          <div className="absolute bottom-40 right-10 w-40 h-40 bg-purple-100/50 rounded-full blur-3xl" />
+
+          {/* 主要内容卡片 */}
+          <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/50 max-w-sm w-full">
+            {/* 动态 loading 图标 */}
+            <div className="flex justify-center mb-6">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-200">
+                  <Icons.Chef className="w-10 h-10 text-white" />
+                </div>
+                {/* 脉冲动画圈 */}
+                <div className="absolute inset-0 rounded-full bg-blue-400/30 animate-ping" />
+              </div>
+            </div>
+
+            <h2 className="text-xl font-bold text-gray-800 text-center mb-2">AI 正在分析中</h2>
+            <p className="text-gray-500 text-center text-sm mb-6">Gemini 正在分析您的饮食并生成个性化建议...</p>
+
+            {/* 进度指示器 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                  <Icons.Check className="w-4 h-4 text-green-600" />
+                </div>
+                <span className="text-sm text-gray-600">读取饮食记录</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Icons.Loader className="w-4 h-4 text-blue-600 animate-spin" />
+                </div>
+                <span className="text-sm text-gray-600">计算营养成分<span className="text-gray-400">...</span></span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                  <Icons.Activity className="w-4 h-4 text-gray-400" />
+                </div>
+                <span className="text-sm text-gray-400">生成减肥建议</span>
+              </div>
+            </div>
+          </div>
         </div>
       );
     }
