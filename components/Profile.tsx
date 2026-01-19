@@ -128,10 +128,11 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
 
         <PullToRefresh
           onRefresh={loadCloudHistory}
-          pullingContent={<div className="text-gray-400 py-4 text-center font-medium text-xs">下拉刷新历史</div>}
+          pullingContent={<div className="text-gray-600 py-4 text-center font-medium text-xs">下拉刷新历史</div>}
           refreshingContent={
-            <div className="py-4 flex justify-center">
-              <Icons.Loader className="w-6 h-6 text-blue-500 animate-spin" />
+            <div className="py-4 flex flex-col items-center gap-2">
+              <Icons.Loader className="w-6 h-6 text-blue-600 animate-spin" />
+              <span className="text-xs text-gray-500 font-medium">正在获取历史数据...</span>
             </div>
           }
         >
@@ -183,10 +184,12 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
   return (
     <PullToRefresh
       onRefresh={loadCloudHistory}
-      pullingContent={<div className="text-white/60 py-4 text-center font-medium text-xs">下拉刷新</div>}
+      isPullable={!isEditing}
+      pullingContent={<div className="text-gray-600 py-4 text-center font-medium text-xs">下拉刷新</div>}
       refreshingContent={
-        <div className="py-4 flex justify-center">
-          <Icons.Loader className="w-6 h-6 text-white animate-spin" />
+        <div className="py-4 flex flex-col items-center gap-2">
+          <Icons.Loader className="w-6 h-6 text-blue-600 animate-spin" />
+          <span className="text-xs text-gray-500 font-medium">正在同步云端数据...</span>
         </div>
       }
     >

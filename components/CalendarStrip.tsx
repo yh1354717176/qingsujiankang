@@ -6,14 +6,15 @@ interface CalendarStripProps {
   selectedDate: string; // YYYY-MM-DD
   onSelectDate: (date: string) => void;
   userPhoneNumber?: string; // 用于检查数据
+  isPickerOpen: boolean;
+  setIsPickerOpen: (open: boolean) => void;
 }
 
 /**
  * @description 日历条组件 - 显示最近7天的日期选择器并支持左右滑动切换周
  */
-export const CalendarStrip: React.FC<CalendarStripProps> = ({ selectedDate, onSelectDate, userPhoneNumber }) => {
+export const CalendarStrip: React.FC<CalendarStripProps> = ({ selectedDate, onSelectDate, userPhoneNumber, isPickerOpen, setIsPickerOpen }) => {
   const [datesWithData, setDatesWithData] = useState<Set<string>>(new Set());
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   // 检查哪些日期有数据
   useEffect(() => {
@@ -84,7 +85,7 @@ export const CalendarStrip: React.FC<CalendarStripProps> = ({ selectedDate, onSe
     const touchEnd = e.changedTouches[0].clientX;
     const diff = touchStart - touchEnd;
 
-    if (Math.abs(diff) > 60) {
+    if (Math.abs(diff) > 40) { // 降低阈值提高灵敏度
       const current = parseSafeDate(selectedDate);
       if (diff > 0) {
         // 向左划 -> 下一周
@@ -129,8 +130,11 @@ export const CalendarStrip: React.FC<CalendarStripProps> = ({ selectedDate, onSe
       </div>
 
       <div
-        className="grid grid-cols-7 gap-1 touch-pan-y active:cursor-grabbing"
-        onTouchStart={handleTouchStart}
+        className="grid grid-cols-7 gap-1 touch-none active:cursor-grabbing"
+        onTouchStart={(e) => {
+          e.stopPropagation(); // 阻止冒泡到 PullToRefresh
+          handleTouchStart(e);
+        }}
         onTouchEnd={handleTouchEnd}
       >
         {days.map(date => {

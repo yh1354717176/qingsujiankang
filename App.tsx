@@ -70,6 +70,7 @@ const App: React.FC = () => {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -373,6 +374,7 @@ const App: React.FC = () => {
 
     return (
       <PullToRefresh
+        isPullable={!isModalOpen && !isDatePickerOpen}
         onRefresh={async () => {
           try {
             const cloudData = await fetchDayData(user.phoneNumber, currentDate);
@@ -393,11 +395,11 @@ const App: React.FC = () => {
             showToast(`刷新失败: ${err.message}`);
           }
         }}
-        pullingContent={<div className="text-gray-400 py-4 text-center font-medium">下拉刷新</div>}
+        pullingContent={<div className="text-gray-500 py-4 text-center font-medium text-sm">下拉刷新</div>}
         refreshingContent={
           <div className="flex flex-col items-center justify-center py-4 gap-2">
-            <Icons.Loader className="w-6 h-6 text-blue-500 animate-spin" />
-            <span className="text-sm text-gray-400 font-medium">刷新中...</span>
+            <Icons.Loader className="w-6 h-6 text-blue-600 animate-spin" />
+            <span className="text-sm text-gray-500 font-medium font-['Inter']">正在获取今日记录...</span>
           </div>
         }
       >
@@ -459,7 +461,12 @@ const App: React.FC = () => {
 
           <div className="flex-1">
             {/* 日历 */}
-            <CalendarStrip selectedDate={currentDate} onSelectDate={setCurrentDate} />
+            <CalendarStrip
+              selectedDate={currentDate}
+              onSelectDate={setCurrentDate}
+              isPickerOpen={isDatePickerOpen}
+              setIsPickerOpen={setIsDatePickerOpen}
+            />
 
             {/* 细分隔线 */}
             <div className="mx-4 border-t border-gray-100" />
@@ -529,6 +536,7 @@ const App: React.FC = () => {
     if (!analysis) {
       return (
         <PullToRefresh
+          isPullable={!isModalOpen && !isDatePickerOpen}
           onRefresh={async () => {
             if (user) {
               const cloudData = await fetchDayData(user.phoneNumber, currentDate);
@@ -538,10 +546,11 @@ const App: React.FC = () => {
               showToast("已刷新", 'success');
             }
           }}
-          pullingContent={<div className="text-gray-400 py-4 text-center font-medium">下拉刷新</div>}
+          pullingContent={<div className="text-gray-500 py-4 text-center font-medium text-sm">下拉刷新</div>}
           refreshingContent={
             <div className="flex flex-col items-center justify-center py-4 gap-2">
-              <Icons.Loader className="w-6 h-6 text-blue-500 animate-spin" />
+              <Icons.Loader className="w-6 h-6 text-blue-600 animate-spin" />
+              <span className="text-sm text-gray-500 font-medium font-['Inter']">刷新中...</span>
             </div>
           }
         >
@@ -572,6 +581,7 @@ const App: React.FC = () => {
 
     return (
       <PullToRefresh
+        isPullable={!isModalOpen && !isDatePickerOpen}
         onRefresh={async () => {
           if (user) {
             const cloudData = await fetchDayData(user.phoneNumber, currentDate);
@@ -581,10 +591,11 @@ const App: React.FC = () => {
             showToast("已刷新", 'success');
           }
         }}
-        pullingContent={<div className="text-gray-400 py-4 text-center font-medium">下拉刷新</div>}
+        pullingContent={<div className="text-gray-500 py-4 text-center font-medium text-sm">下拉刷新</div>}
         refreshingContent={
           <div className="flex flex-col items-center justify-center py-4 gap-2">
-            <Icons.Loader className="w-6 h-6 text-blue-500 animate-spin" />
+            <Icons.Loader className="w-6 h-6 text-blue-600 animate-spin" />
+            <span className="text-sm text-gray-500 font-medium font-['Inter']">更新分析中...</span>
           </div>
         }
       >

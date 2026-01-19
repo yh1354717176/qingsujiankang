@@ -87,6 +87,31 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
         onClose();
     };
 
+    // --- Swipe Month Support ---
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchYStart, setTouchYStart] = useState<number | null>(null);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setTouchStart(e.targetTouches[0].clientX);
+        setTouchYStart(e.targetTouches[0].clientY);
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (touchStart === null || touchYStart === null) return;
+        const touchEnd = e.changedTouches[0].clientX;
+        const touchYEnd = e.changedTouches[0].clientY;
+        const diffX = touchStart - touchEnd;
+        const diffY = touchYStart - touchYEnd;
+
+        // 只有在 X 轴位移大于 Y 轴位移（横向滑动）时才触发切换
+        if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY)) {
+            if (diffX > 0) handleMonthChange(1); // 向左滑 -> 下一月
+            else handleMonthChange(-1);           // 向右滑 -> 上一月
+        }
+        setTouchStart(null);
+        setTouchYStart(null);
+    };
+
     return (
         <div className="fixed inset-0 z-[999] flex flex-col justify-end">
             {/* 遮罩背景：纯色，不使用模糊以防安卓白屏 */}
@@ -96,7 +121,14 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
             />
 
             {/* 选择器卡片 */}
-            <div className="relative w-full max-w-md mx-auto bg-white rounded-t-[32px] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
+            <div
+                className="relative w-full max-w-md mx-auto bg-white rounded-t-[32px] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 touch-none"
+                onTouchStart={(e) => {
+                    e.stopPropagation();
+                    handleTouchStart(e);
+                }}
+                onTouchEnd={handleTouchEnd}
+            >
                 {/* 顶部标题栏 */}
                 <div className="px-6 pt-6 pb-2">
                     <div className="flex items-center justify-between">
@@ -127,8 +159,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
                     ))}
                 </div>
 
-                {/* 日历网格 */}
-                <div className="grid grid-cols-7 px-4 pb-4">
+                {/* 日历网格 - 移除 touch-none 以允许点击，由父容器处理滑动 */}
+                <div className="grid grid-cols-7 px-4 pb-4 select-none">
                     {generateCalendar().map((d, i) => {
                         const isSelected = d.dateStr === selectedDate;
                         const isToday = d.dateStr === todayStr;

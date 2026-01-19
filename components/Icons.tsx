@@ -27,7 +27,8 @@ import {
   Share2,
   Bell,
   Calendar,
-  History
+  History,
+  AlertCircle
 } from 'lucide-react';
 
 export const Icons = {
@@ -58,5 +59,6 @@ export const Icons = {
   Share: Share2,
   Bell,
   Calendar,
-  History
+  History,
+  AlertCircle
 };
