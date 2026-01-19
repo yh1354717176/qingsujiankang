@@ -17,6 +17,32 @@ const FIXED_HOLIDAYS: Record<string, string> = {
     '01-01': '元旦', '05-01': '劳动节', '10-01': '国庆',
 };
 
+/**
+ * @description 生成指定年月的日历数据
+ */
+const generateCalendarForMonth = (year: number, month: number, selectedDate: string) => {
+    const days = [];
+    const firstDay = new Date(year, month, 1);
+    const startDay = new Date(firstDay);
+    startDay.setDate(1 - firstDay.getDay());
+
+    for (let i = 0; i < 42; i++) {
+        const current = new Date(startDay);
+        current.setDate(startDay.getDate() + i);
+        const dStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+        const mmdd = dStr.substring(5);
+        days.push({
+            day: current.getDate(),
+            month: current.getMonth(),
+            year: current.getFullYear(),
+            isCurrentMonth: current.getMonth() === month,
+            dateStr: dStr,
+            holiday: LUNAR_HOLIDAYS[dStr] || FIXED_HOLIDAYS[mmdd] || null
+        });
+    }
+    return days;
+};
+
 export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selectedDate, onSelect }) => {
     const parseSafeDate = (dateStr: string) => {
         try {
@@ -28,34 +54,24 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
         }
     };
 
-    // ⚠️ 所有 Hooks 必须在 early return 之前调用，确保调用顺序一致
+    // ⚠️ 所有 Hooks 必须在 early return 之前调用
     const [viewDate, setViewDate] = useState(() => parseSafeDate(selectedDate));
-    const [touchStart, setTouchStart] = useState<number | null>(null);
-    const [touchYStart, setTouchYStart] = useState<number | null>(null);
-    // 动画相关状态
-    const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+    const [touchStartX, setTouchStartX] = useState<number | null>(null);
+    const [touchStartY, setTouchStartY] = useState<number | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragOffset, setDragOffset] = useState(0); // 拖动偏移量（像素）
     const [isAnimating, setIsAnimating] = useState(false);
-    const calendarRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     const todayStr = new Date().toISOString().split('T')[0];
 
     useEffect(() => {
         if (isOpen) {
             setViewDate(parseSafeDate(selectedDate));
-            setSlideDirection(null);
+            setDragOffset(0);
+            setIsAnimating(false);
         }
     }, [isOpen, selectedDate]);
-
-    // 动画结束后重置状态
-    useEffect(() => {
-        if (slideDirection) {
-            const timer = setTimeout(() => {
-                setSlideDirection(null);
-                setIsAnimating(false);
-            }, 250);
-            return () => clearTimeout(timer);
-        }
-    }, [slideDirection]);
 
     // Early return 必须在所有 Hooks 之后
     if (!isOpen) return null;
@@ -63,74 +79,152 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth();
 
-    const generateCalendar = () => {
-        const days = [];
-        const firstDay = new Date(year, month, 1);
-        const startDay = new Date(firstDay);
-        startDay.setDate(1 - firstDay.getDay());
+    // 获取容器宽度
+    const getContainerWidth = () => containerRef.current?.offsetWidth || 350;
 
-        for (let i = 0; i < 42; i++) {
-            const current = new Date(startDay);
-            current.setDate(startDay.getDate() + i);
-            const dStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
-            const mmdd = dStr.substring(5);
-            days.push({
-                day: current.getDate(),
-                month: current.getMonth(),
-                year: current.getFullYear(),
-                isCurrentMonth: current.getMonth() === month,
-                dateStr: dStr,
-                holiday: LUNAR_HOLIDAYS[dStr] || FIXED_HOLIDAYS[mmdd] || null
-            });
-        }
-        return days;
-    };
+    // 当前月、上个月、下个月
+    const prevMonth = new Date(year, month - 1, 1);
+    const nextMonth = new Date(year, month + 1, 1);
 
-    const handleMonthChange = (offset: number) => {
-        if (isAnimating) return; // 防止动画期间重复触发
-        setIsAnimating(true);
-        setSlideDirection(offset > 0 ? 'left' : 'right');
-        // 延迟更新日期，让动画先开始
-        setTimeout(() => {
-            setViewDate(new Date(year, month + offset, 1));
-        }, 50);
-    };
+    const currentMonthDays = generateCalendarForMonth(year, month, selectedDate);
+    const prevMonthDays = generateCalendarForMonth(prevMonth.getFullYear(), prevMonth.getMonth(), selectedDate);
+    const nextMonthDays = generateCalendarForMonth(nextMonth.getFullYear(), nextMonth.getMonth(), selectedDate);
 
+    // 触摸开始
     const handleTouchStart = (e: React.TouchEvent) => {
         if (isAnimating) return;
-        setTouchStart(e.touches[0].clientX);
-        setTouchYStart(e.touches[0].clientY);
+        setTouchStartX(e.touches[0].clientX);
+        setTouchStartY(e.touches[0].clientY);
+        setIsDragging(true);
     };
 
-    const handleTouchEnd = (e: React.TouchEvent) => {
-        if (touchStart === null || touchYStart === null || isAnimating) return;
-        const diffX = touchStart - e.changedTouches[0].clientX;
-        const diffY = touchYStart - e.changedTouches[0].clientY;
+    // 触摸移动 - 跟随手指
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging || touchStartX === null || touchStartY === null || isAnimating) return;
 
-        if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY)) {
-            handleMonthChange(diffX > 0 ? 1 : -1);
+        const currentX = e.touches[0].clientX;
+        const currentY = e.touches[0].clientY;
+        const diffX = currentX - touchStartX;
+        const diffY = currentY - touchStartY;
+
+        // 判断是水平滑动还是垂直滑动
+        if (Math.abs(diffX) > Math.abs(diffY)) {
+            e.preventDefault(); // 阻止垂直滚动
+            setDragOffset(diffX);
         }
-        setTouchStart(null);
-        setTouchYStart(null);
     };
 
-    // 计算动画样式 - 增强版，更明显的滑动效果
-    const getCalendarAnimationStyle = (): React.CSSProperties => {
-        if (!slideDirection) {
-            return {
-                transform: 'translateX(0) scale(1)',
-                opacity: 1,
-                transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-            };
+    // 触摸结束 - 判断是否切换月份
+    const handleTouchEnd = () => {
+        if (!isDragging) return;
+        setIsDragging(false);
+
+        const containerWidth = getContainerWidth();
+        const threshold = containerWidth * 0.2; // 滑动超过 20% 就切换
+
+        if (dragOffset < -threshold) {
+            // 左滑 -> 下个月
+            animateToMonth(1);
+        } else if (dragOffset > threshold) {
+            // 右滑 -> 上个月
+            animateToMonth(-1);
+        } else {
+            // 回弹到原位
+            animateToMonth(0);
         }
 
-        // 滑动中的样式：大幅位移 + 缩放 + 淡出
-        const translateX = slideDirection === 'left' ? '-40px' : '40px';
-        return {
-            transform: `translateX(${translateX}) scale(0.92)`,
-            opacity: 0.2,
-            transition: 'transform 0.2s cubic-bezier(0.4, 0, 1, 1), opacity 0.2s cubic-bezier(0.4, 0, 1, 1)',
-        };
+        setTouchStartX(null);
+        setTouchStartY(null);
+    };
+
+    // 动画切换月份
+    const animateToMonth = (direction: number) => {
+        setIsAnimating(true);
+        const containerWidth = getContainerWidth();
+
+        if (direction === 0) {
+            // 回弹到原位
+            setDragOffset(0);
+            setTimeout(() => setIsAnimating(false), 300);
+        } else {
+            // 滑动到目标位置
+            setDragOffset(direction > 0 ? -containerWidth : containerWidth);
+
+            setTimeout(() => {
+                // 动画完成后更新月份
+                setViewDate(new Date(year, month + direction, 1));
+                setDragOffset(0);
+                setIsAnimating(false);
+            }, 300);
+        }
+    };
+
+    // 按钮点击切换月份
+    const handleMonthChange = (offset: number) => {
+        if (isAnimating) return;
+        animateToMonth(offset);
+    };
+
+    // 渲染月份网格
+    const renderMonthGrid = (days: Array<any>, monthDate: Date) => {
+        const m = monthDate.getMonth();
+        return (
+            <div
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(7, 1fr)',
+                    minWidth: '100%',
+                    flexShrink: 0,
+                }}
+            >
+                {days.map((d, i) => {
+                    const isSelected = d.dateStr === selectedDate;
+                    const isToday = d.dateStr === todayStr;
+                    return (
+                        <div
+                            key={i}
+                            onClick={() => { onSelect(d.dateStr); onClose(); }}
+                            style={{
+                                aspectRatio: '1',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                margin: '2px',
+                                borderRadius: '50%',
+                                cursor: 'pointer',
+                                backgroundColor: isSelected ? '#2563eb' : (isToday ? '#eff6ff' : 'transparent'),
+                                color: isSelected ? '#ffffff' : (d.isCurrentMonth ? '#374151' : '#d1d5db'),
+                                fontWeight: (isSelected || isToday) ? 'bold' : 'normal',
+                                position: 'relative'
+                            }}
+                        >
+                            <span style={{ fontSize: '14px' }}>{d.day}</span>
+                            {d.holiday && (
+                                <span style={{
+                                    fontSize: '8px',
+                                    position: 'absolute',
+                                    bottom: '4px',
+                                    color: isSelected ? '#bfdbfe' : '#ef4444',
+                                    whiteSpace: 'nowrap'
+                                }}>
+                                    {d.holiday}
+                                </span>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
+    // 计算滑动容器的 transform
+    const getSliderTransform = () => {
+        const containerWidth = getContainerWidth();
+        // 初始位置在中间（显示当前月）
+        const baseOffset = -containerWidth;
+        const totalOffset = baseOffset + dragOffset;
+        return `translateX(${totalOffset}px)`;
     };
 
     return (
@@ -162,87 +256,82 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
                     overflow: 'hidden'
                 }}
                 onClick={(e) => e.stopPropagation()}
-                onTouchStart={(e) => { e.stopPropagation(); handleTouchStart(e); }}
-                onTouchEnd={handleTouchEnd}
             >
                 {/* 顶部控制 */}
                 <div style={{ padding: '20px 24px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={() => handleMonthChange(-1)} style={{ padding: '8px', color: '#9ca3af', transition: 'transform 0.15s', transform: 'scale(1)' }} onTouchStart={(e) => (e.currentTarget.style.transform = 'scale(0.85)')} onTouchEnd={(e) => (e.currentTarget.style.transform = 'scale(1)')}>
-                            <Icons.ChevronLeft className="w-6 h-6" />
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => handleMonthChange(-1)}
+                        style={{
+                            padding: '10px',
+                            color: '#6b7280',
+                            borderRadius: '12px',
+                            backgroundColor: '#f3f4f6',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        <Icons.ChevronLeft className="w-5 h-5" />
+                    </button>
                     <div style={{
                         fontSize: '18px',
                         fontWeight: 'bold',
                         color: '#111827',
-                        transition: 'opacity 0.2s, transform 0.2s',
-                        opacity: slideDirection ? 0.4 : 1,
-                        transform: slideDirection === 'left' ? 'translateX(-10px)' : slideDirection === 'right' ? 'translateX(10px)' : 'translateX(0)'
+                        transition: 'opacity 0.2s',
+                        opacity: isDragging ? 0.5 : 1
                     }}>
                         {year}年 {month + 1}月
                     </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={() => handleMonthChange(1)} style={{ padding: '8px', color: '#9ca3af', transition: 'transform 0.15s', transform: 'scale(1)' }} onTouchStart={(e) => (e.currentTarget.style.transform = 'scale(0.85)')} onTouchEnd={(e) => (e.currentTarget.style.transform = 'scale(1)')}>
-                            <Icons.ChevronRight className="w-6 h-6" />
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => handleMonthChange(1)}
+                        style={{
+                            padding: '10px',
+                            color: '#6b7280',
+                            borderRadius: '12px',
+                            backgroundColor: '#f3f4f6',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        <Icons.ChevronRight className="w-5 h-5" />
+                    </button>
                 </div>
 
                 {/* 星期表头 */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '0 16px' }}>
                     {['日', '一', '二', '三', '四', '五', '六'].map(w => (
-                        <div key={w} style={{ textAlign: 'center', fontSize: '12px', color: '#d1d5db', padding: '10px 0', fontWeight: 'bold' }}>{w}</div>
+                        <div key={w} style={{ textAlign: 'center', fontSize: '12px', color: '#9ca3af', padding: '10px 0', fontWeight: '600' }}>{w}</div>
                     ))}
                 </div>
 
-                {/* 日历网格 - 应用动画效果 */}
+                {/* 日历滑动容器 */}
                 <div
-                    ref={calendarRef}
+                    ref={containerRef}
                     style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(7, 1fr)',
+                        overflow: 'hidden',
                         padding: '0 16px 16px',
-                        ...getCalendarAnimationStyle()
+                        touchAction: 'pan-y'
                     }}
+                    onTouchStart={(e) => { e.stopPropagation(); handleTouchStart(e); }}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
                 >
-                    {generateCalendar().map((d, i) => {
-                        const isSelected = d.dateStr === selectedDate;
-                        const isToday = d.dateStr === todayStr;
-                        return (
-                            <div
-                                key={i}
-                                onClick={() => { onSelect(d.dateStr); onClose(); }}
-                                style={{
-                                    aspectRatio: '1',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    margin: '2px',
-                                    borderRadius: '50%',
-                                    cursor: 'pointer',
-                                    backgroundColor: isSelected ? '#2563eb' : (isToday ? '#eff6ff' : 'transparent'),
-                                    color: isSelected ? '#ffffff' : (d.isCurrentMonth ? '#374151' : '#d1d5db'),
-                                    fontWeight: (isSelected || isToday) ? 'bold' : 'normal',
-                                    position: 'relative'
-                                }}
-                            >
-                                <span style={{ fontSize: '14px' }}>{d.day}</span>
-                                {d.holiday && (
-                                    <span style={{
-                                        fontSize: '8px',
-                                        position: 'absolute',
-                                        bottom: '4px',
-                                        color: isSelected ? '#bfdbfe' : '#ef4444',
-                                        whiteSpace: 'nowrap'
-                                    }}>
-                                        {d.holiday}
-                                    </span>
-                                )}
-                            </div>
-                        );
-                    })}
+                    <div
+                        style={{
+                            display: 'flex',
+                            transform: getSliderTransform(),
+                            transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                            willChange: 'transform'
+                        }}
+                    >
+                        {/* 上个月 */}
+                        {renderMonthGrid(prevMonthDays, prevMonth)}
+                        {/* 当前月 */}
+                        {renderMonthGrid(currentMonthDays, viewDate)}
+                        {/* 下个月 */}
+                        {renderMonthGrid(nextMonthDays, nextMonth)}
+                    </div>
                 </div>
 
                 {/* 底部按钮 */}
