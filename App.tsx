@@ -539,9 +539,8 @@ const App: React.FC = () => {
 
       {/* Add Food Modal (Batch + Images) */}
       {isModalOpen && (
-        <div className={`fixed inset-0 bg-black/50 z-[60] flex items-end justify-center backdrop-blur-sm animate-in fade-in transition-all duration-300 ${isKeyboardVisible ? 'pb-[40vh]' : ''}`}>
+        <div className={`fixed inset-0 bg-black/50 z-[60] flex items-end justify-center backdrop-blur-sm animate-in fade-in transition-all duration-300`}>
           <div
-            style={{ transform: isKeyboardVisible ? 'translateY(-20px)' : 'translateY(0)' }}
             className={`bg-white w-full max-w-md rounded-t-[2rem] p-6 animate-in slide-in-from-bottom duration-300 max-h-[90vh] flex flex-col transition-transform`}
           >
             <div className="flex justify-between items-center mb-4">
