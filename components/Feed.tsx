@@ -18,10 +18,14 @@ interface FeedPost {
   streak?: number;
 }
 
+interface FeedProps {
+  showToast: (msg: string, type?: 'success' | 'error') => void;
+}
+
 /**
  * @description 社区页面组件
  */
-export const Feed: React.FC = () => {
+export const Feed: React.FC<FeedProps> = ({ showToast }) => {
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<FeedPost | null>(null);
@@ -31,10 +35,12 @@ export const Feed: React.FC = () => {
 
   const loadFeed = async () => {
     try {
+      setIsLoading(true);
       const data = await fetchFeed();
       setPosts(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch feed", err);
+      showToast(`社区加载失败: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -45,7 +51,13 @@ export const Feed: React.FC = () => {
   }, []);
 
   const handleRefresh = async () => {
-    await loadFeed();
+    try {
+      const data = await fetchFeed();
+      setPosts(data);
+      showToast("已刷新", 'success');
+    } catch (err: any) {
+      showToast(`刷新失败: ${err.message}`);
+    }
   };
 
   const openViewer = (images: string[], index: number, e: React.MouseEvent) => {

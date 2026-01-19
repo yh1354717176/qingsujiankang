@@ -37,6 +37,12 @@ const App: React.FC = () => {
 
   // --- State ---
   const [activeTab, setActiveTab] = useState<Tab>('feed'); // Default to Feed
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
+
+  const showToast = (message: string, type: 'error' | 'success' = 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
   const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   const [dayLog, setDayLog] = useState<DayLog>({
@@ -160,6 +166,7 @@ const App: React.FC = () => {
           }
         } catch (err) {
           console.error("Failed to fetch cloud data", err);
+          showToast("加载数据失败，请检查网络或重试。");
           // 失败时不回退到本地，直接清空或报错
           setDayLog({
             [MealType.BREAKFAST]: [],
@@ -187,25 +194,26 @@ const App: React.FC = () => {
 
   const handleLogin = async (profile: UserProfile) => {
     try {
-      await syncUser(profile); // 等待云端同步
+      await syncUser(profile);
       localStorage.setItem('currentUserProfile', JSON.stringify(profile));
       setUser(profile);
       if (activeTab === 'feed') {
         setActiveTab('tracker');
       }
+      showToast("登录成功", 'success');
     } catch (err: any) {
-      alert(`登录/同步失败: ${err.message}`);
+      showToast(`登录/同步失败: ${err.message}`);
     }
   };
 
   const handleUpdateUser = async (updatedProfile: UserProfile) => {
     try {
-      await syncUser(updatedProfile); // 等待云端同步
+      await syncUser(updatedProfile);
       setUser(updatedProfile);
       localStorage.setItem('currentUserProfile', JSON.stringify(updatedProfile));
-      alert("资料已同步");
+      showToast("资料已同步", 'success');
     } catch (err: any) {
-      alert(`同步失败: ${err.message}`);
+      showToast(`同步失败: ${err.message}`);
     }
   };
 
@@ -214,6 +222,7 @@ const App: React.FC = () => {
     setUser(null);
     setAnalysis(null);
     setActiveTab('feed');
+    showToast("已退出登录", 'success');
   };
 
   const openAddModal = (type: MealType) => {
@@ -231,9 +240,10 @@ const App: React.FC = () => {
         const compressedPromises = files.map(file => compressImage(file));
         const newImages = await Promise.all(compressedPromises);
         setSelectedImages(prev => [...prev, ...newImages]);
+        showToast("图片已添加", 'success');
       } catch (err) {
         console.error("Image processing failed", err);
-        alert("图片处理失败，请重试");
+        showToast("图片处理失败，请重试");
       } finally {
         setIsCompressing(false);
         // Reset input so same file can be selected again if needed
@@ -244,10 +254,14 @@ const App: React.FC = () => {
 
   const handleRemoveImage = (index: number) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
+    showToast("图片已移除", 'success');
   };
 
   const handleBatchAdd = async () => {
-    if (!batchInput.trim()) return;
+    if (!batchInput.trim()) {
+      showToast("请输入食物名称");
+      return;
+    }
 
     const lines = batchInput.split('\n').map(l => l.trim()).filter(l => l);
 
@@ -277,9 +291,12 @@ const App: React.FC = () => {
         };
         setDayLog(updatedLog);
         setIsModalOpen(false);
+        showToast("记录已保存", 'success');
       } catch (err: any) {
-        alert(`保存失败: ${err.message}`);
+        showToast(`保存失败: ${err.message}`);
       }
+    } else {
+      showToast("请先登录以保存记录。");
     }
   };
 
@@ -305,9 +322,12 @@ const App: React.FC = () => {
           [type]: updatedMeals
         };
         setDayLog(updatedLog);
+        showToast("已删除", 'success');
       } catch (err: any) {
-        alert(`删除失败: ${err.message}`);
+        showToast(`删除失败: ${err.message}`);
       }
+    } else {
+      showToast("请先登录以删除记录。");
     }
   };
 
@@ -320,8 +340,10 @@ const App: React.FC = () => {
     try {
       const result = await analyzeMeals(dayLog, user, currentDate);
       setAnalysis(result);
+      showToast("分析完成！", 'success');
     } catch (err: any) {
       setError(err.message || "分析失败，请稍后重试。");
+      showToast("分析失败，请稍后重试。");
     } finally {
       setIsAnalyzing(false);
     }
@@ -609,7 +631,7 @@ const App: React.FC = () => {
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto no-scrollbar relative w-full"
       >
-        {activeTab === 'feed' && <Feed />}
+        {activeTab === 'feed' && <Feed showToast={showToast} />}
         {activeTab === 'tracker' && renderTracker()}
         {activeTab === 'analysis' && renderAnalysis()}
         {activeTab === 'profile' && (
