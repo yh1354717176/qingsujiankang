@@ -1,5 +1,26 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { DayLog, MealType } from "../types";
+
+// Inline types to avoid Vercel module resolution issues
+enum MealType {
+    BREAKFAST = '早餐',
+    LUNCH = '午餐',
+    DINNER = '晚餐',
+    SNACK = '加餐'
+}
+
+interface FoodItem {
+    id: string;
+    name: string;
+    description?: string;
+    images?: string[];
+}
+
+interface DayLog {
+    [MealType.BREAKFAST]: FoodItem[];
+    [MealType.LUNCH]: FoodItem[];
+    [MealType.DINNER]: FoodItem[];
+    [MealType.SNACK]: FoodItem[];
+}
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.API_KEY || "" });
 
@@ -70,7 +91,7 @@ export default async function handler(req: any, res: any) {
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-1.5-pro",
+            model: "gemini-2.5-pro",
             contents: `You are a professional nutritionist and weight loss coach. 
       Analyze the following daily food log. 
       Estimate the nutritional values conservatively.
