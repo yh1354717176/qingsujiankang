@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Icons } from './Icons';
 import { ImageViewer } from './ImageViewer';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 
 interface FeedPost {
   id: number;
@@ -58,6 +59,14 @@ export const Feed: React.FC = () => {
   const [selectedPost, setSelectedPost] = useState<FeedPost | null>(null);
   const [viewerImages, setViewerImages] = useState<string[] | null>(null);
   const [viewerIndex, setViewerIndex] = useState(0);
+
+  const handleRefresh = async () => {
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 1000);
+    });
+  };
 
   const openViewer = (images: string[], index: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -156,11 +165,11 @@ export const Feed: React.FC = () => {
   if (selectedPost) {
     return (
       <div className="animate-in slide-in-from-right duration-300 bg-gray-50 min-h-full flex flex-col">
-        <div className="bg-white sticky top-0 z-10 px-4 py-3 shadow-sm border-b border-gray-100 flex items-center gap-4">
-          <button onClick={() => setSelectedPost(null)} className="text-gray-600">
+        <div className="bg-blue-600 sticky top-0 z-10 px-4 pt-[calc(env(safe-area-inset-top,24px)+0.75rem)] pb-3 shadow-lg flex items-center gap-4">
+          <button onClick={() => setSelectedPost(null)} className="text-white hover:text-blue-100">
             <Icons.ChevronRight className="w-6 h-6 rotate-180" />
           </button>
-          <h1 className="text-lg font-bold text-gray-800">详情</h1>
+          <h1 className="text-lg font-bold text-white">详情</h1>
         </div>
         <div className="p-4 pb-20">
           {renderPost(selectedPost, true)}
@@ -179,32 +188,36 @@ export const Feed: React.FC = () => {
 
   // --- Feed List View ---
   return (
-    <div className="animate-in fade-in duration-500 bg-gray-50 min-h-full">
-      {/* Header */}
-      <div className="bg-white sticky top-0 z-10 px-4 py-3 shadow-sm border-b border-gray-100 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-          <span className="text-blue-600">轻塑</span>社区
-        </h1>
-      </div>
+    <div className="animate-in fade-in duration-500 bg-gray-50 h-full flex flex-col relative">
+      <PullToRefresh onRefresh={handleRefresh} className="h-full overflow-y-auto w-full">
+        <div className="min-h-full">
+          {/* Header */}
+          <div className="bg-blue-600 sticky top-0 z-10 px-4 pt-[calc(env(safe-area-inset-top,24px)+0.75rem)] pb-3 shadow-lg flex items-center justify-between">
+            <h1 className="text-xl font-bold text-white flex items-center gap-2">
+              <span className="text-white italic">轻塑</span>社区
+            </h1>
+          </div>
 
-      {/* Content */}
-      <div className="p-4 space-y-4 pb-6">
-        {/* Banner */}
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg mb-6">
-          <h2 className="font-bold text-lg mb-1">分享您的健康生活</h2>
-          <p className="text-blue-100 text-sm mb-3">记录每一餐，和大家一起变瘦变美</p>
-          <div className="flex items-center gap-2 text-xs bg-white/20 w-fit px-3 py-1 rounded-full backdrop-blur-sm">
-            <Icons.Activity className="w-3 h-3" />
-            <span>已有 12,345 人今日打卡</span>
+          {/* Content */}
+          <div className="p-4 space-y-4 pb-20">
+            {/* Banner */}
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg mb-6">
+              <h2 className="font-bold text-lg mb-1">分享您的健康生活</h2>
+              <p className="text-blue-100 text-sm mb-3">记录每一餐，和大家一起变瘦变美</p>
+              <div className="flex items-center gap-2 text-xs bg-white/20 w-fit px-3 py-1 rounded-full backdrop-blur-sm">
+                <Icons.Activity className="w-3 h-3" />
+                <span>已有 12,345 人今日打卡</span>
+              </div>
+            </div>
+
+            {MOCK_POSTS.map(post => renderPost(post, false))}
+
+            <div className="text-center text-gray-400 text-xs py-4">
+              没有更多内容了
+            </div>
           </div>
         </div>
-
-        {MOCK_POSTS.map(post => renderPost(post, false))}
-
-        <div className="text-center text-gray-400 text-xs py-4">
-          没有更多内容了
-        </div>
-      </div>
+      </PullToRefresh>
 
       {viewerImages && (
         <ImageViewer
