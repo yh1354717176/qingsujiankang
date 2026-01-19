@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import sql from "../utils/db";
+import sql from "../utils/db.js";
 
 // Inline types to avoid Vercel module resolution issues
 enum MealType {

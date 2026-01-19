@@ -1,4 +1,4 @@
-import sql from '../utils/db';
+import sql from '../utils/db.js';
 
 /**
  * @api {post} /api/sync-meal 同步餐食记录

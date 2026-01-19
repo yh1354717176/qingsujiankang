@@ -1,4 +1,4 @@
-import sql from '../utils/db';
+import sql from '../utils/db.js';
 
 /**
  * @api {get} /api/fetch-history 获取历史分析记录列表

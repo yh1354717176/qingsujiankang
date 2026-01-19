@@ -1,4 +1,4 @@
-import sql from '../utils/db';
+import sql from '../utils/db.js';
 
 /**
  * @api {get} /api/fetch-day 获取单日全量数据

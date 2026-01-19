@@ -1,4 +1,4 @@
-import sql from '../utils/db';
+import sql from '../utils/db.js';
 
 /**
  * @api {get} /api/fetch-feed 获取社区动态
