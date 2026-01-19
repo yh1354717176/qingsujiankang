@@ -13,6 +13,7 @@ import { analyzeMeals, syncUser, syncMeal, fetchDayData, fetchUser } from './ser
 import { compressImage } from './utils/imageHelper';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 
 
 // --- Helper for Mock ID ---
@@ -365,76 +366,98 @@ const App: React.FC = () => {
 
     // 计算今日总热量
     const todayCalories = Object.values(dayLog).flat().reduce((sum, item) => {
-      // 简单估算：如果食物名包含数字可能是热量，否则估算100kcal
+      // 如果食物名包含数字可能是热量，否则估算100kcal
       return sum + 100;
     }, 0);
     const totalItems = Object.values(dayLog).flat().length;
 
     return (
-      <div className="animate-in fade-in duration-500 h-full flex flex-col bg-gray-50">
-        {/* Fixed Header - 延伸到状态栏区域 */}
-        <div
-          className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white fixed top-0 left-0 right-0 z-10 px-6 pb-8 rounded-b-[2.5rem] shadow-xl overflow-hidden"
-          style={{ paddingTop: 'max(24px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 24px))' }}
-        >
-          {/* 装饰性背景元素 */}
-          <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/5" />
-          <div className="absolute -bottom-20 -left-12 w-40 h-40 rounded-full bg-white/5" />
-          <div className="absolute top-1/2 right-1/4 w-20 h-20 rounded-full bg-white/5" />
+      <PullToRefresh
+        onRefresh={async () => {
+          try {
+            const cloudData = await fetchDayData(user.phoneNumber, currentDate);
+            if (cloudData.segments) {
+              const newLog: DayLog = {
+                [MealType.BREAKFAST]: [],
+                [MealType.LUNCH]: [],
+                [MealType.DINNER]: [],
+                [MealType.SNACK]: [],
+              };
+              cloudData.segments.forEach((seg: any) => {
+                newLog[seg.meal_type as MealType] = seg.food_items;
+              });
+              setDayLog(newLog);
+            }
+            showToast("已刷新", 'success');
+          } catch (err: any) {
+            showToast(`刷新失败: ${err.message}`);
+          }
+        }}
+        pullingContent={<div className="text-gray-400 py-4 text-center font-medium">下拉刷新</div>}
+        refreshingContent={
+          <div className="flex flex-col items-center justify-center py-4 gap-2">
+            <Icons.Loader className="w-6 h-6 text-blue-500 animate-spin" />
+            <span className="text-sm text-gray-400 font-medium">刷新中...</span>
+          </div>
+        }
+      >
+        <div className="animate-in fade-in duration-500 min-h-screen flex flex-col bg-gray-50">
+          {/* Fixed Header - 延伸到状态栏区域 */}
+          <div
+            className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white z-10 px-6 pb-8 rounded-b-[2.5rem] shadow-xl overflow-hidden relative"
+            style={{ paddingTop: 'max(24px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 24px))' }}
+          >
+            {/* 装饰性背景元素 */}
+            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/5" />
+            <div className="absolute -bottom-20 -left-12 w-40 h-40 rounded-full bg-white/5" />
 
-          <div className="relative z-10 flex justify-between items-start">
-            <div>
-              <p className="text-blue-200 text-sm mb-1">👋 你好</p>
-              <h1 className="text-2xl font-bold">{user.name}</h1>
-              <p className="text-blue-100/80 text-sm mt-1">
-                {currentDate === new Date().toISOString().split('T')[0]
-                  ? '今天想吃点什么？'
-                  : `${currentDate} 的记录`
-                }
-              </p>
+            <div className="relative z-10 flex justify-between items-start">
+              <div>
+                <p className="text-blue-200 text-sm mb-1">👋 你好</p>
+                <h1 className="text-2xl font-bold">{user.name}</h1>
+                <p className="text-blue-100/80 text-sm mt-1">
+                  {currentDate === new Date().toISOString().split('T')[0]
+                    ? '今天想吃点什么？'
+                    : `${currentDate} 的记录`
+                  }
+                </p>
+              </div>
+              <div
+                onClick={() => setActiveTab('profile')}
+                className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/30 overflow-hidden cursor-pointer flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+              >
+                {user.avatar ? (
+                  <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <Icons.User className="w-6 h-6 text-white" />
+                )}
+              </div>
             </div>
-            <div
-              onClick={() => setActiveTab('profile')}
-              className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/30 overflow-hidden cursor-pointer flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
-            >
-              {user.avatar ? (
-                <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <Icons.User className="w-6 h-6 text-white" />
-              )}
+
+            {/* 统计卡片 */}
+            <div className="relative z-10 mt-5 grid grid-cols-2 gap-3">
+              <div className="bg-white/15 rounded-2xl p-3 border border-white/10">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+                    <Icons.Utensils className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-white/70 text-xs">已记录</span>
+                </div>
+                <div className="text-white font-bold text-xl">{totalItems} <span className="text-sm font-normal text-white/60">项</span></div>
+              </div>
+              <div className="bg-white/15 rounded-2xl p-3 border border-white/10">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+                    <Icons.Activity className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-white/70 text-xs">估算热量</span>
+                </div>
+                <div className="text-white font-bold text-xl">{todayCalories} <span className="text-sm font-normal text-white/60">kcal</span></div>
+              </div>
             </div>
           </div>
 
-          {/* 统计卡片 */}
-          <div className="relative z-10 mt-5 grid grid-cols-2 gap-3">
-            <div className="bg-white/15 rounded-2xl p-3 border border-white/10">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
-                  <Icons.Utensils className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-white/70 text-xs">已记录</span>
-              </div>
-              <div className="text-white font-bold text-xl">{totalItems} <span className="text-sm font-normal text-white/60">项</span></div>
-            </div>
-            <div className="bg-white/15 rounded-2xl p-3 border border-white/10">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
-                  <Icons.Activity className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-white/70 text-xs">估算热量</span>
-              </div>
-              <div className="text-white font-bold text-xl">{todayCalories} <span className="text-sm font-normal text-white/60">kcal</span></div>
-            </div>
-          </div>
-        </div>
-
-        {/* 为 fixed header 留出空间 */}
-        <div style={{ height: 'max(240px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 240px))' }} className="shrink-0" />
-
-        {/* 可滚动内容区域 */}
-        <div className="flex-1 overflow-y-auto">
-          {/* 日历+餐食卡片区域 - 统一白色背景 */}
-          <div className="bg-white">
+          <div className="flex-1">
             {/* 日历 */}
             <CalendarStrip selectedDate={currentDate} onSelectDate={setCurrentDate} />
 
@@ -459,26 +482,20 @@ const App: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
 
-          <div className="px-4 pt-6 pb-12 bg-gray-50">
-            <button
-              onClick={handleAnalyze}
-              disabled={totalItems === 0}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 active:scale-95 transition-all text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 disabled:shadow-none flex items-center justify-center gap-3"
-            >
-              <Icons.Chef className="w-6 h-6" />
-              <span>{totalItems > 0 ? '生成 AI 减肥计划' : '请先记录今日饮食'}</span>
-            </button>
-
-            {totalItems > 0 && (
-              <p className="text-center text-xs text-gray-400 mt-3">
-                AI 将分析您的饮食并提供专业建议
-              </p>
-            )}
+            <div className="px-4 pt-6 pb-12">
+              <button
+                onClick={handleAnalyze}
+                disabled={totalItems === 0 || isAnalyzing}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 active:scale-95 transition-all text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 flex items-center justify-center gap-3"
+              >
+                {isAnalyzing ? <Icons.Loader className="w-6 h-6 animate-spin" /> : <Icons.Chef className="w-6 h-6" />}
+                <span>{isAnalyzing ? '分析中...' : totalItems > 0 ? '生成 AI 减肥计划' : '请先记录今日饮食'}</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </PullToRefresh>
     );
   };
 
@@ -500,7 +517,7 @@ const App: React.FC = () => {
       return (
         <div className="flex flex-col items-center justify-center h-full px-6 text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-500">
-            <Icons.Utensils className="w-8 h-8" />
+            <Icons.AlertCircle className="w-8 h-8" />
           </div>
           <h2 className="text-xl font-bold text-gray-800">出错了</h2>
           <p className="text-gray-500 mt-2">{error}</p>
@@ -511,14 +528,32 @@ const App: React.FC = () => {
 
     if (!analysis) {
       return (
-        <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
-            <Icons.Activity className="w-8 h-8" />
+        <PullToRefresh
+          onRefresh={async () => {
+            if (user) {
+              const cloudData = await fetchDayData(user.phoneNumber, currentDate);
+              if (cloudData.analysis) {
+                setAnalysis(cloudData.analysis);
+              }
+              showToast("已刷新", 'success');
+            }
+          }}
+          pullingContent={<div className="text-gray-400 py-4 text-center font-medium">下拉刷新</div>}
+          refreshingContent={
+            <div className="flex flex-col items-center justify-center py-4 gap-2">
+              <Icons.Loader className="w-6 h-6 text-blue-500 animate-spin" />
+            </div>
+          }
+        >
+          <div className="flex flex-col items-center justify-center min-h-[80vh] px-6 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
+              <Icons.Activity className="w-8 h-8" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-800">暂无分析数据</h2>
+            <p className="text-gray-500 mt-2">请先在"记录"页面添加食物并点击生成。</p>
+            <button onClick={() => setActiveTab('tracker')} className="mt-6 bg-blue-100 text-blue-700 px-6 py-2 rounded-full font-medium">去记录</button>
           </div>
-          <h2 className="text-xl font-bold text-gray-800">暂无分析数据</h2>
-          <p className="text-gray-500 mt-2">请先在"记录"页面添加食物并点击生成。</p>
-          <button onClick={() => setActiveTab('tracker')} className="mt-6 bg-blue-100 text-blue-700 px-6 py-2 rounded-full font-medium">去记录</button>
-        </div>
+        </PullToRefresh>
       );
     }
 
@@ -536,99 +571,117 @@ const App: React.FC = () => {
     };
 
     return (
-      <div className="animate-in slide-in-from-right duration-500 h-full flex flex-col">
-        {/* Header - Changed to sticky to avoid fixed positioning bugs with animations */}
-        <div
-          className="bg-blue-600 sticky top-0 left-0 right-0 z-20 px-5 pb-4 shadow-lg flex items-center justify-between"
-          style={{ paddingTop: 'max(16px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px))' }}
-        >
-          <div className="flex flex-col">
-            <h2 className="text-xl font-bold text-white leading-tight">AI 分析报告</h2>
-            <span className="text-[10px] text-blue-100 font-medium tracking-wide uppercase">{currentDate}</span>
+      <PullToRefresh
+        onRefresh={async () => {
+          if (user) {
+            const cloudData = await fetchDayData(user.phoneNumber, currentDate);
+            if (cloudData.analysis) {
+              setAnalysis(cloudData.analysis);
+            }
+            showToast("已刷新", 'success');
+          }
+        }}
+        pullingContent={<div className="text-gray-400 py-4 text-center font-medium">下拉刷新</div>}
+        refreshingContent={
+          <div className="flex flex-col items-center justify-center py-4 gap-2">
+            <Icons.Loader className="w-6 h-6 text-blue-500 animate-spin" />
           </div>
-          <div className="text-sm font-bold text-blue-600 bg-white px-4 py-1.5 rounded-full shadow-sm">
-            {analysis.macros.calories} <span className="text-[10px] opacity-60">kcal</span>
+        }
+      >
+        <div className="animate-in slide-in-from-right duration-500 min-h-screen flex flex-col">
+          {/* Header */}
+          <div
+            className="bg-blue-600 sticky top-0 left-0 right-0 z-20 px-5 pb-4 shadow-lg flex items-center justify-between"
+            style={{ paddingTop: 'max(16px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px))' }}
+          >
+            <div className="flex flex-col">
+              <h2 className="text-xl font-bold text-white leading-tight">AI 分析报告</h2>
+              <span className="text-[10px] text-blue-100 font-medium tracking-wide uppercase">{currentDate}</span>
+            </div>
+            <div className="text-sm font-bold text-blue-600 bg-white px-4 py-1.5 rounded-full shadow-sm">
+              {analysis.macros.calories} <span className="text-[10px] opacity-60">kcal</span>
+            </div>
+          </div>
+
+          <div className="p-4 space-y-6 pb-12 flex-1">
+            {/* Chart Section */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+              <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                <Icons.Activity className="w-5 h-5 text-blue-500" />
+                营养摄入估算
+              </h3>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `${value}g`} />
+                    <Legend verticalAlign="bottom" height={36} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center mt-2">
+                <div className="bg-orange-50 p-2 rounded-lg">
+                  <div className="text-xs text-gray-500">蛋白质</div>
+                  <div className="font-bold text-orange-500">{analysis.macros.protein}g</div>
+                </div>
+                <div className="bg-green-50 p-2 rounded-lg">
+                  <div className="text-xs text-gray-500">碳水</div>
+                  <div className="font-bold text-green-500">{analysis.macros.carbs}g</div>
+                </div>
+                <div className="bg-yellow-50 p-2 rounded-lg">
+                  <div className="text-xs text-gray-500">脂肪</div>
+                  <div className="font-bold text-yellow-500">{analysis.macros.fat}g</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Overall Feedback Section */}
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-2xl shadow-sm border border-indigo-100">
+              <h3 className="font-bold text-indigo-900 mb-2 flex items-center gap-2">
+                <Icons.User className="w-5 h-5" />
+                当日总结
+              </h3>
+              <p className="text-indigo-800 text-sm leading-relaxed">
+                {analysis.feedback}
+              </p>
+            </div>
+
+            {/* Per Meal Analysis */}
+            <div className="space-y-3">
+              <h3 className="font-bold text-gray-700 ml-1">分餐点评</h3>
+              {Object.entries(mealFeedbackMap).map(([type, feedback]) => (
+                <div key={type} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                  <h4 className="text-sm font-bold text-gray-800 mb-1">{type}</h4>
+                  <p className="text-xs text-gray-600">{feedback}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Plan Section */}
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+              <h3 className="font-bold text-gray-800 mb-4 text-lg border-b pb-2 flex items-center gap-2">
+                <Icons.Chef className="w-5 h-5 text-green-600" />
+                明日减肥计划
+              </h3>
+              <div className="prose prose-sm max-w-none text-gray-600 prose-headings:text-gray-800 prose-headings:font-bold prose-strong:text-gray-800 prose-li:marker:text-blue-500">
+                <ReactMarkdown>{analysis.plan}</ReactMarkdown>
+              </div>
+            </div>
           </div>
         </div>
-
-        <div className="p-4 space-y-6 pb-12 flex-1 overflow-y-auto">
-          {/* Chart Section */}
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-            <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
-              <Icons.Activity className="w-5 h-5 text-blue-500" />
-              营养摄入估算
-            </h3>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => `${value}g`} />
-                  <Legend verticalAlign="bottom" height={36} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-center mt-2">
-              <div className="bg-orange-50 p-2 rounded-lg">
-                <div className="text-xs text-gray-500">蛋白质</div>
-                <div className="font-bold text-orange-500">{analysis.macros.protein}g</div>
-              </div>
-              <div className="bg-green-50 p-2 rounded-lg">
-                <div className="text-xs text-gray-500">碳水</div>
-                <div className="font-bold text-green-500">{analysis.macros.carbs}g</div>
-              </div>
-              <div className="bg-yellow-50 p-2 rounded-lg">
-                <div className="text-xs text-gray-500">脂肪</div>
-                <div className="font-bold text-yellow-500">{analysis.macros.fat}g</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Overall Feedback Section */}
-          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-2xl shadow-sm border border-indigo-100">
-            <h3 className="font-bold text-indigo-900 mb-2 flex items-center gap-2">
-              <Icons.User className="w-5 h-5" />
-              当日总结
-            </h3>
-            <p className="text-indigo-800 text-sm leading-relaxed">
-              {analysis.feedback}
-            </p>
-          </div>
-
-          {/* Per Meal Analysis */}
-          <div className="space-y-3">
-            <h3 className="font-bold text-gray-700 ml-1">分餐点评</h3>
-            {Object.entries(mealFeedbackMap).map(([type, feedback]) => (
-              <div key={type} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <h4 className="text-sm font-bold text-gray-800 mb-1">{type}</h4>
-                <p className="text-xs text-gray-600">{feedback}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Plan Section */}
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-            <h3 className="font-bold text-gray-800 mb-4 text-lg border-b pb-2 flex items-center gap-2">
-              <Icons.Chef className="w-5 h-5 text-green-600" />
-              明日减肥计划
-            </h3>
-            <div className="prose prose-sm max-w-none text-gray-600 prose-headings:text-gray-800 prose-headings:font-bold prose-strong:text-gray-800 prose-li:marker:text-blue-500">
-              <ReactMarkdown>{analysis.plan}</ReactMarkdown>
-            </div>
-          </div>
-        </div>
-      </div>
+      </PullToRefresh>
     );
   };
 
