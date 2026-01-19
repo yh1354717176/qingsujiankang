@@ -62,11 +62,21 @@ const analysisSchema: Schema = {
 };
 
 export default async function handler(req: any, res: any) {
+    // Add CORS headers
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { log, phoneNumber, logDate } = req.body as { log: DayLog, phoneNumber?: string, logDate?: string };
+    const { log, phoneNumber, logDate } = (req.body || {}) as { log: DayLog, phoneNumber?: string, logDate?: string };
 
     if (!log) {
         return res.status(400).json({ error: 'Missing log data' });
@@ -77,7 +87,7 @@ export default async function handler(req: any, res: any) {
     let hasFood = false;
 
     Object.values(MealType).forEach((type) => {
-        const items = log[type];
+        const items = log[type] || [];
         if (items.length > 0) {
             hasFood = true;
             mealString += `- ${type}: ${items.map(i => `${i.name} (${i.description || ''})`).join(", ")}\n`;
@@ -92,7 +102,7 @@ export default async function handler(req: any, res: any) {
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-pro",
+            model: "gemini-1.5-pro", // 使用更稳健的 1.5 Pro 或根据环境切换至 gemini-3-pro
             contents: `You are a professional nutritionist and weight loss coach. 
       Analyze the following daily food log. 
       Estimate the nutritional values conservatively.
@@ -113,6 +123,9 @@ export default async function handler(req: any, res: any) {
         // 如果提供了手机号和日期，则持久化到数据库
         if (phoneNumber && logDate) {
             try {
+                if (!process.env.DATABASE_URL) {
+                    throw new Error("DATABASE_URL is not configured on the server");
+                }
                 const users = await sql`SELECT id FROM qingshu_users WHERE phone_number = ${phoneNumber}`;
                 if (users.length > 0) {
                     const userId = users[0].id;
@@ -127,15 +140,20 @@ export default async function handler(req: any, res: any) {
                             plan = EXCLUDED.plan
                     `;
                 }
-            } catch (dbError) {
-                console.error("Failed to save analysis to DB:", dbError);
-                // 不阻断返回结果给用户
+            } catch (dbError: any) {
+                console.error("DB Persistence Error:", dbError);
+                // 即使数据库失败，也返回 AI 结果，但不消失错误详情
+                result._dbError = dbError.message;
             }
         }
 
         res.status(200).json(result);
     } catch (error: any) {
-        console.error("Gemini Analysis Error:", error);
-        res.status(500).json({ error: error.message || 'AI analysis failed' });
+        console.error("Gemini Analysis Detailed Error:", error);
+        res.status(500).json({
+            error: 'AI analysis failed',
+            details: error.message,
+            hint: "Check if GEMINI_API_KEY and DATABASE_URL are set in your deployment environment."
+        });
     }
 }

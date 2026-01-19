@@ -9,11 +9,21 @@ import sql from '../utils/db';
  * @apiParam {Array} foodItems 食物项数组
  */
 export default async function handler(req: any, res: any) {
+    // Add CORS headers
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { phoneNumber, logDate, mealType, foodItems } = req.body;
+    const { phoneNumber, logDate, mealType, foodItems } = req.body || {};
 
     if (!phoneNumber || !logDate || !mealType) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -36,9 +46,12 @@ export default async function handler(req: any, res: any) {
                 updated_at = CURRENT_TIMESTAMP
             RETURNING *
         `;
-        res.status(200).json(result[0]);
+        res.status(200).json(result[0] || { success: true });
     } catch (error: any) {
-        console.error("Sync Meal Error:", error);
-        res.status(500).json({ error: error.message || 'Sync failed' });
+        console.error("Sync Meal Detailed Error:", error);
+        res.status(500).json({
+            error: 'Sync failed',
+            details: error.message
+        });
     }
 }

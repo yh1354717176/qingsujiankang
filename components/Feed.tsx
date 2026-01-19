@@ -20,47 +20,10 @@ interface FeedPost {
 /**
  * @description 社区动态数据
  */
-const MOCK_POSTS: FeedPost[] = [
-  {
-    id: 1,
-    userName: "瘦身达人小美",
-    time: "10分钟前",
-    content: "今天的减脂午餐：水煮鸡胸肉 + 西兰花，坚持就是胜利！打卡第30天，已经瘦了5斤啦~ 💪",
-    mealType: "午餐",
-    calories: 450,
-    likes: 124,
-    streak: 30,
-    images: [
-      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&auto=format&fit=crop&q=80"
-    ],
-    aiAnalysis: "非常棒的减脂午餐搭配！鸡胸肉提供了优质蛋白，西兰花富含膳食纤维，热量控制在450kcal左右非常合理。建议搭配少量复合碳水（如半根玉米或一小块红薯）会更加均衡，避免下午感到饥饿。"
-  },
-  {
-    id: 2,
-    userName: "健身Jason",
-    time: "35分钟前",
-    content: "练后来一顿高蛋白早餐，燕麦牛奶+鸡蛋。简单又营养。",
-    mealType: "早餐",
-    calories: 380,
-    likes: 89,
-    streak: 15,
-    images: ["https://images.unsplash.com/photo-1511690656952-34342d5c2895?w=500&auto=format&fit=crop&q=80"],
-    aiAnalysis: "经典的训练后补充方案。鸡蛋和牛奶提供了必要的蛋白质，燕麦是优质的慢碳，有助于恢复肌糖原。总体热量适中，营养密度高。如果运动强度较大，可以额外增加一个蛋白。"
-  },
-  {
-    id: 3,
-    userName: "KeepMoving",
-    time: "1小时前",
-    content: "晚餐吃少点，蔬菜沙拉配一点点坚果。虽然饿但是为了夏天拼了！🥗",
-    mealType: "晚餐",
-    calories: 200,
-    likes: 245,
-    streak: 7,
-    images: [],
-    aiAnalysis: "虽然热量控制得很低，但200kcal对于晚餐来说略显不足，容易导致夜间饥饿影响睡眠。建议加入一些低脂蛋白质（如虾仁、豆腐）增加饱腹感，同时坚果的优质脂肪对身体很有益，但要注意控制量。"
-  }
-];
+/**
+ * @description 社区动态数据 (已清空 Mock 数据)
+ */
+const MOCK_POSTS: FeedPost[] = [];
 
 /**
  * @description 社区页面组件

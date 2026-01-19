@@ -185,19 +185,28 @@ const App: React.FC = () => {
 
   // --- Handlers ---
 
-  const handleLogin = (profile: UserProfile) => {
-    localStorage.setItem('currentUserProfile', JSON.stringify(profile));
-    setUser(profile);
-    syncUser(profile); // 同步到云端
-    if (activeTab === 'feed') {
-      setActiveTab('tracker');
+  const handleLogin = async (profile: UserProfile) => {
+    try {
+      await syncUser(profile); // 等待云端同步
+      localStorage.setItem('currentUserProfile', JSON.stringify(profile));
+      setUser(profile);
+      if (activeTab === 'feed') {
+        setActiveTab('tracker');
+      }
+    } catch (err: any) {
+      alert(`登录/同步失败: ${err.message}`);
     }
   };
 
-  const handleUpdateUser = (updatedProfile: UserProfile) => {
-    setUser(updatedProfile);
-    localStorage.setItem('currentUserProfile', JSON.stringify(updatedProfile));
-    syncUser(updatedProfile); // 同步到云端
+  const handleUpdateUser = async (updatedProfile: UserProfile) => {
+    try {
+      await syncUser(updatedProfile); // 等待云端同步
+      setUser(updatedProfile);
+      localStorage.setItem('currentUserProfile', JSON.stringify(updatedProfile));
+      alert("资料已同步");
+    } catch (err: any) {
+      alert(`同步失败: ${err.message}`);
+    }
   };
 
   const handleLogout = () => {
@@ -237,18 +246,15 @@ const App: React.FC = () => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleBatchAdd = () => {
+  const handleBatchAdd = async () => {
     if (!batchInput.trim()) return;
 
     const lines = batchInput.split('\n').map(l => l.trim()).filter(l => l);
 
-    // Save to history
+    // Save to history (Local UI helper)
     if (lines.length > 0) {
       const newHistory = Array.from(new Set([...lines, ...foodHistory])).slice(0, 20);
       setFoodHistory(newHistory);
-      if (user) {
-        localStorage.setItem(`nutriplan_history_${user.phoneNumber}`, JSON.stringify(newHistory));
-      }
     }
 
     // Logic: Create items from text. Attach ALL images to the first generated item.
@@ -259,18 +265,22 @@ const App: React.FC = () => {
       images: index === 0 ? selectedImages : undefined // Attach images to the first item
     }));
 
-    const updatedLog = {
-      ...dayLog,
-      [currentMealType]: [...dayLog[currentMealType], ...newItems]
-    };
-    setDayLog(updatedLog);
+    const updatedMeals = [...dayLog[currentMealType], ...newItems];
 
     // 同步到云端
     if (user) {
-      syncMeal(user.phoneNumber, currentDate, currentMealType, updatedLog[currentMealType]);
+      try {
+        await syncMeal(user.phoneNumber, currentDate, currentMealType, updatedMeals);
+        const updatedLog = {
+          ...dayLog,
+          [currentMealType]: updatedMeals
+        };
+        setDayLog(updatedLog);
+        setIsModalOpen(false);
+      } catch (err: any) {
+        alert(`保存失败: ${err.message}`);
+      }
     }
-
-    setIsModalOpen(false);
   };
 
   const handleHistoryClick = (item: string) => {
@@ -282,18 +292,22 @@ const App: React.FC = () => {
     });
   };
 
-  const handleRemoveFoods = (type: MealType, ids: string[]) => {
+  const handleRemoveFoods = async (type: MealType, ids: string[]) => {
     const idSet = new Set(ids);
     const updatedMeals = dayLog[type].filter(item => !idSet.has(item.id));
-    const updatedLog = {
-      ...dayLog,
-      [type]: updatedMeals
-    };
-    setDayLog(updatedLog);
 
     // 同步到云端
     if (user) {
-      syncMeal(user.phoneNumber, currentDate, type, updatedMeals);
+      try {
+        await syncMeal(user.phoneNumber, currentDate, type, updatedMeals);
+        const updatedLog = {
+          ...dayLog,
+          [type]: updatedMeals
+        };
+        setDayLog(updatedLog);
+      } catch (err: any) {
+        alert(`删除失败: ${err.message}`);
+      }
     }
   };
 

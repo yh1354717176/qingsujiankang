@@ -36,22 +36,32 @@ export const analyzeMeals = async (log: DayLog, user?: UserProfile | null, date?
  * @description 同步用户信息到云端
  */
 export const syncUser = async (user: UserProfile) => {
-  return fetch(`${BASE_URL}/api/sync-user`, {
+  const response = await fetch(`${BASE_URL}/api/sync-user`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(user),
-  }).then(res => res.json());
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || `同步用户失败: ${response.status}`);
+  }
+  return response.json();
 };
 
 /**
  * @description 同步单项餐食记录到云端
  */
 export const syncMeal = async (phoneNumber: string, logDate: string, mealType: string, foodItems: any[]) => {
-  return fetch(`${BASE_URL}/api/sync-meal`, {
+  const response = await fetch(`${BASE_URL}/api/sync-meal`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ phoneNumber, logDate, mealType, foodItems }),
-  }).then(res => res.json());
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || `同步餐食失败: ${response.status}`);
+  }
+  return response.json();
 };
 
 /**
@@ -59,7 +69,12 @@ export const syncMeal = async (phoneNumber: string, logDate: string, mealType: s
  */
 export const fetchDayData = async (phoneNumber: string, date: string) => {
   const params = new URLSearchParams({ phoneNumber, date });
-  return fetch(`${BASE_URL}/api/fetch-day?${params}`).then(res => res.json());
+  const response = await fetch(`${BASE_URL}/api/fetch-day?${params}`);
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || `获取数据失败: ${response.status}`);
+  }
+  return response.json();
 };
 
 /**
@@ -67,5 +82,10 @@ export const fetchDayData = async (phoneNumber: string, date: string) => {
  */
 export const fetchHistory = async (phoneNumber: string) => {
   const params = new URLSearchParams({ phoneNumber });
-  return fetch(`${BASE_URL}/api/fetch-history?${params}`).then(res => res.json());
+  const response = await fetch(`${BASE_URL}/api/fetch-history?${params}`);
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || `获取历史失败: ${response.status}`);
+  }
+  return response.json();
 };
