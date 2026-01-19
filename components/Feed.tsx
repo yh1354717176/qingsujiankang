@@ -244,24 +244,11 @@ export const Feed: React.FC = () => {
         <div className="min-h-full">
           {/* Content */}
           <div className="px-4 space-y-4 pb-12">
-            {/* Banner */}
-            <div className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-3xl p-5 text-white shadow-xl relative overflow-hidden mt-2">
-              {/* Decorative elements */}
-              <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-white/10" />
-              <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-white/10" />
-
+            {/* Banner - Simplified */}
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden mt-2 text-center">
               <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">🔥</span>
-                  <h2 className="font-bold text-xl">分享您的健康生活</h2>
-                </div>
-                <p className="text-white/80 text-sm mb-4">记录每一餐，和大家一起变瘦变美</p>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 text-sm bg-white/20 px-4 py-2 rounded-full">
-                    <Icons.Activity className="w-4 h-4" />
-                    <span className="font-medium">12,345 人今日打卡</span>
-                  </div>
-                </div>
+                <h2 className="font-bold text-xl mb-1">在这个社区，每个人都在变好</h2>
+                <p className="text-white/80 text-sm">分享你的健康瞬间，见证彼此的蜕变</p>
               </div>
             </div>
 

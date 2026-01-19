@@ -21,7 +21,9 @@ export const analyzeMeals = async (log: DayLog, user?: UserProfile | null, date?
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `请求失败: ${response.status}`);
+      const detailedError = errorData.details ? `\n详情: ${errorData.details}` : "";
+      const hint = errorData.hint ? `\n提示: ${errorData.hint}` : "";
+      throw new Error((errorData.error || "请求失败") + detailedError + hint);
     }
 
     const data = await response.json();
