@@ -650,8 +650,9 @@ const App: React.FC = () => {
               onLogout={handleLogout}
               onNavigateToDate={(date) => {
                 setCurrentDate(date);
-                setActiveTab('analysis'); // Go to analysis tab for that date
+                setActiveTab('tracker'); // Go to tracker tab for that date
               }}
+              showToast={showToast}
             />
           ) : (
             <Auth onLogin={handleLogin} />

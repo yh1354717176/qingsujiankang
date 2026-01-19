@@ -6,9 +6,10 @@ import { compressImage, uploadToImgBB } from '../utils/imageHelper';
 
 interface ProfileProps {
   user: UserProfile;
-  onUpdateUser: (updatedProfile: UserProfile) => void;
+  onUpdateUser: (updatedProfile: UserProfile) => Promise<void>; // 改为 Promise
   onLogout: () => void;
   onNavigateToDate: (date: string) => void;
+  showToast: (msg: string, type?: 'success' | 'error') => void;
 }
 
 interface HistoryItem {
@@ -20,7 +21,7 @@ interface HistoryItem {
  * @description 个人中心页面组件
  * @param {ProfileProps} props - 组件属性
  */
-export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, onNavigateToDate }) => {
+export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, onNavigateToDate, showToast }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(user.name);
   const [editGender, setEditGender] = useState(user.gender);
@@ -56,8 +57,9 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
         setIsCompressing(true);
         const compressed = await compressImage(file, 0.6, 400);
         setEditAvatar(compressed);
+        showToast("头像已处理", 'success');
       } catch (err) {
-        console.error("Failed to compress image", err);
+        showToast("图片处理失败");
       } finally {
         setIsCompressing(false);
       }
@@ -70,14 +72,15 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
 
       let finalAvatarUrl = editAvatar;
 
-      // 如果头像还是本地的 Base64（说明是新选的），则上传到 ImgBB
+      // 检测是否为新选的 Base64 图片
       if (editAvatar && editAvatar.startsWith('data:image')) {
         try {
+          console.log("正在通过 ImgBB 上传图片...");
           finalAvatarUrl = await uploadToImgBB(editAvatar);
+          console.log("上传成功，得到 URL:", finalAvatarUrl);
         } catch (uploadErr: any) {
-          console.error("Upload to ImgBB failed:", uploadErr);
-          // 如果上传失败，可以回退到 Base64 或报错（这里为了数据库轻量化建议报错提示用户）
-          throw new Error(`图片云端同步失败: ${uploadErr.message}`);
+          showToast(`云端图片上传失败: ${uploadErr.message}`);
+          throw uploadErr; // 中止保存流程
         }
       }
 
@@ -90,7 +93,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
       setIsEditing(false);
     } catch (err: any) {
       console.error("Save failed", err);
-      // 如果你的父组件已经有 Toast，可以通过 props 调用，或者这里也弹一个
+      // App.tsx 的 handleUpdateUser 会处理同步失败的提示，这里只需处理上传失败
     } finally {
       setIsSaving(false);
     }
