@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { ImageViewer } from './ImageViewer';
 import PullToRefresh from 'react-simple-pull-to-refresh';
+import { fetchFeed } from '../services/geminiService';
 
 interface FeedPost {
   id: number;
@@ -18,28 +19,33 @@ interface FeedPost {
 }
 
 /**
- * @description 社区动态数据
- */
-/**
- * @description 社区动态数据 (已清空 Mock 数据)
- */
-const MOCK_POSTS: FeedPost[] = [];
-
-/**
  * @description 社区页面组件
  */
 export const Feed: React.FC = () => {
+  const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<FeedPost | null>(null);
   const [viewerImages, setViewerImages] = useState<string[] | null>(null);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
 
+  const loadFeed = async () => {
+    try {
+      const data = await fetchFeed();
+      setPosts(data);
+    } catch (err) {
+      console.error("Failed to fetch feed", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadFeed();
+  }, []);
+
   const handleRefresh = async () => {
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, 1000);
-    });
+    await loadFeed();
   };
 
   const openViewer = (images: string[], index: number, e: React.MouseEvent) => {
@@ -61,21 +67,23 @@ export const Feed: React.FC = () => {
     });
   };
 
-  const renderImages = (images: string[], limit = 4) => {
-    if (!images || images.length === 0) return null;
+  const renderImages = (images: any, limit = 4) => {
+    // 处理可能的字符串形式
+    const imageList = typeof images === 'string' ? JSON.parse(images) : (images || []);
+    if (!imageList || imageList.length === 0) return null;
 
-    const count = images.length;
+    const count = imageList.length;
     let gridClass = "grid-cols-1";
     if (count === 2) gridClass = "grid-cols-2";
     if (count >= 3) gridClass = "grid-cols-3";
 
     return (
       <div className={`grid ${gridClass} gap-1.5 rounded-2xl overflow-hidden mb-3`}>
-        {images.slice(0, limit).map((img, idx) => (
+        {imageList.slice(0, limit).map((img: string, idx: number) => (
           <div
             key={idx}
             className={`aspect-square relative ${count === 1 ? 'aspect-video rounded-2xl' : ''}`}
-            onClick={(e) => openViewer(images, idx, e)}
+            onClick={(e) => openViewer(imageList, idx, e)}
           >
             <img src={img} alt="Meal" className="w-full h-full object-cover hover:opacity-90 transition-opacity cursor-zoom-in" />
             {count > limit && idx === limit - 1 && (
@@ -189,7 +197,6 @@ export const Feed: React.FC = () => {
   if (selectedPost) {
     return (
       <div className="animate-in slide-in-from-right duration-300 bg-white min-h-full flex flex-col h-full relative z-[60]">
-        {/* Header - Changed to sticky for stable alignment */}
         <div
           className="bg-white border-b border-gray-100 sticky top-0 left-0 right-0 z-10 px-4 pb-4 flex items-center gap-4 shadow-sm"
           style={{ paddingTop: 'max(16px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px))' }}
@@ -240,7 +247,19 @@ export const Feed: React.FC = () => {
       {/* Spacer */}
       <div style={{ height: 'max(80px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 80px))' }} className="shrink-0" />
 
-      <PullToRefresh onRefresh={handleRefresh} className="flex-1 overflow-y-auto w-full">
+      <PullToRefresh
+        onRefresh={handleRefresh}
+        pullingContent={
+          <div className="text-gray-400 text-sm py-4 text-center w-full">下拉刷新</div>
+        }
+        refreshingContent={
+          <div className="text-blue-500 text-sm py-4 flex items-center justify-center gap-2 w-full">
+            <Icons.Loader className="w-4 h-4 animate-spin" />
+            <span>刷新中...</span>
+          </div>
+        }
+        className="flex-1 overflow-y-auto w-full"
+      >
         <div className="min-h-full">
           {/* Content */}
           <div className="px-4 space-y-4 pb-12">
@@ -254,25 +273,39 @@ export const Feed: React.FC = () => {
 
             {/* Posts */}
             <div className="space-y-4">
-              {MOCK_POSTS.map((post, index) => (
-                <div
-                  key={post.id}
-                  className="animate-in fade-in slide-in-from-bottom duration-500"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  {renderPost(post, false)}
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                  <Icons.Loader className="w-10 h-10 animate-spin mb-4" />
+                  <p>加载社区动态中...</p>
                 </div>
-              ))}
+              ) : posts.length === 0 ? (
+                <div className="text-center py-20 text-gray-400">
+                  <Icons.Activity className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>暂无动态，快去打卡分享第一条吧！</p>
+                </div>
+              ) : (
+                posts.map((post, index) => (
+                  <div
+                    key={post.id}
+                    className="animate-in fade-in slide-in-from-bottom duration-500"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    {renderPost(post, false)}
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Footer */}
-            <div className="text-center py-6">
-              <div className="inline-flex items-center gap-2 text-gray-400 text-sm">
-                <div className="w-8 h-px bg-gray-200" />
-                <span>已经到底啦</span>
-                <div className="w-8 h-px bg-gray-200" />
+            {!isLoading && posts.length > 0 && (
+              <div className="text-center py-6">
+                <div className="inline-flex items-center gap-2 text-gray-400 text-sm">
+                  <div className="w-8 h-px bg-gray-200" />
+                  <span>已经到底啦</span>
+                  <div className="w-8 h-px bg-gray-200" />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </PullToRefresh>
