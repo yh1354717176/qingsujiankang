@@ -283,7 +283,7 @@ const App: React.FC = () => {
 
     return (
       <div className="animate-in fade-in duration-500">
-        <div className="bg-blue-600 text-white p-6 rounded-b-[2.5rem] shadow-lg mb-6 pt-12 flex justify-between items-center pb-10">
+        <div className="bg-blue-600 text-white p-6 rounded-b-[2.5rem] shadow-lg mb-6 pt-[calc(env(safe-area-inset-top,24px)+1.5rem)] flex justify-between items-center pb-10">
           <div>
             <h1 className="text-2xl font-bold mb-1">你好, {user.name}</h1>
             <p className="text-blue-100 opacity-80">
@@ -384,7 +384,7 @@ const App: React.FC = () => {
 
     return (
       <div className="animate-in slide-in-from-right duration-500">
-        <div className="bg-white sticky top-0 z-10 p-4 pt-12 shadow-sm border-b border-gray-100 flex items-center justify-between">
+        <div className="bg-white sticky top-0 z-10 p-4 pt-[calc(env(safe-area-inset-top,24px)+1rem)] shadow-sm border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800">AI 分析报告</h2>
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400 font-normal">{currentDate}</span>

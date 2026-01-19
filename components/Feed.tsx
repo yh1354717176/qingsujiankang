@@ -156,7 +156,7 @@ export const Feed: React.FC = () => {
   if (selectedPost) {
     return (
       <div className="animate-in slide-in-from-right duration-300 bg-gray-50 min-h-full flex flex-col">
-        <div className="bg-white sticky top-0 z-10 px-4 pt-12 pb-3 shadow-sm border-b border-gray-100 flex items-center gap-4">
+        <div className="bg-white sticky top-0 z-10 px-4 pt-[calc(env(safe-area-inset-top,24px)+0.75rem)] pb-3 shadow-sm border-b border-gray-100 flex items-center gap-4">
           <button onClick={() => setSelectedPost(null)} className="text-gray-600">
             <Icons.ChevronRight className="w-6 h-6 rotate-180" />
           </button>
@@ -181,7 +181,7 @@ export const Feed: React.FC = () => {
   return (
     <div className="animate-in fade-in duration-500 bg-gray-50 min-h-full">
       {/* Header */}
-      <div className="bg-white sticky top-0 z-10 px-4 pt-12 pb-3 shadow-sm border-b border-gray-100 flex items-center justify-between">
+      <div className="bg-white sticky top-0 z-10 px-4 pt-[calc(env(safe-area-inset-top,24px)+0.75rem)] pb-3 shadow-sm border-b border-gray-100 flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
           <span className="text-blue-600">轻塑</span>社区
         </h1>

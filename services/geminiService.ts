@@ -2,7 +2,7 @@ import { DayLog, AnalysisResult } from "../types";
 
 export const analyzeMeals = async (log: DayLog): Promise<AnalysisResult> => {
   try {
-    const response = await fetch('/api/analyze', {
+    const response = await fetch('https://qingsu.yazhu.cyou/api/analyze', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
