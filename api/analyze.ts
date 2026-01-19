@@ -70,7 +70,7 @@ export default async function handler(req: any, res: any) {
 
     try {
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-pro",
+            model: "gemini-1.5-pro",
             contents: `You are a professional nutritionist and weight loss coach. 
       Analyze the following daily food log. 
       Estimate the nutritional values conservatively.
