@@ -12,6 +12,7 @@ import { MealType, FoodItem, DayLog, Tab, AnalysisResult, UserProfile } from './
 import { analyzeMeals } from './services/geminiService';
 import { compressImage } from './utils/imageHelper';
 import { Keyboard } from '@capacitor/keyboard';
+import { StatusBar, Style } from '@capacitor/status-bar';
 
 
 // --- Helper for Mock ID ---
@@ -60,8 +61,20 @@ const App: React.FC = () => {
 
   // --- Effects ---
 
-  // Keyboard Listeners for Mobile
+  // Keyboard & Status Bar Listeners
   useEffect(() => {
+    // 设置状态栏样式：沉浸式 + 白色文字
+    const configureStatusBar = async () => {
+      try {
+        await StatusBar.setOverlaysWebView({ overlay: true });
+        await StatusBar.setStyle({ style: Style.Dark }); // Dark style = White Text on Android
+        await StatusBar.setBackgroundColor({ color: '#00000000' }); // Transparent
+      } catch (e) {
+        console.log('Status Bar plugin not available');
+      }
+    };
+    configureStatusBar();
+
     let showHandle: any;
     let hideHandle: any;
 
