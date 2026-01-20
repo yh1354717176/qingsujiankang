@@ -16,6 +16,7 @@ interface FeedPost {
   likes: number;
   images?: string[];
   aiAnalysis?: string;
+  mealFeedback?: any;
   streak?: number;
 }
 
@@ -175,17 +176,53 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
         {post.images && renderImages(post.images, isDetail ? 9 : 3)}
 
         {/* AI Analysis - Detail View Only */}
-        {isDetail && post.aiAnalysis && (
-          <div className="mt-6 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b flex items-center gap-2 whitespace-nowrap">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-lg shadow-green-100">
-                <Icons.Activity className="w-4 h-4 text-white" />
+        {isDetail && (post.aiAnalysis || post.mealFeedback) && (
+          <div className="mt-6 space-y-4">
+            {/* Meal Feedback Section */}
+            {post.mealFeedback && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-4 w-1 bg-blue-500 rounded-full" />
+                  <span className="font-bold text-gray-800 text-sm">分餐详细点评</span>
+                </div>
+                <div className="grid gap-3">
+                  {['breakfast', 'lunch', 'dinner', 'snack', '早餐', '午餐', '晚餐', '加餐'].map(key => {
+                    // 尝试获取各个key的反馈内容
+                    let feedback = post.mealFeedback[key];
+                    if (typeof feedback === 'object' && feedback?.feedback) feedback = feedback.feedback;
+
+                    if (!feedback) return null;
+
+                    // 简单的中文映射
+                    const labelMap: any = {
+                      'breakfast': '早餐', 'lunch': '午餐', 'dinner': '晚餐', 'snack': '加餐',
+                      '早餐': '早餐', '午餐': '午餐', '晚餐': '晚餐', '加餐': '加餐'
+                    };
+                    const label = labelMap[key] || key;
+
+                    return (
+                      <div key={key} className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                        <div className="text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">{label}</div>
+                        <div className="text-sm text-gray-600 font-medium leading-relaxed">{feedback}</div>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-              AI 营养分析报告
-            </h3>
-            <div className="prose prose-sm max-w-none text-gray-600 prose-headings:text-gray-800 prose-headings:font-bold prose-strong:text-gray-800 prose-li:marker:text-blue-500">
-              <ReactMarkdown>{post.aiAnalysis}</ReactMarkdown>
-            </div>
+            )}
+
+            {/* Overall Analysis Plan */}
+            {post.aiAnalysis && (
+              <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
+                <h3 className="text-base font-bold text-gray-800 mb-3 pb-2 border-b flex items-center gap-2">
+                  <Icons.Chef className="w-5 h-5 text-indigo-500" />
+                  饮食建议
+                </h3>
+                <div className="prose prose-sm max-w-none text-gray-600">
+                  <ReactMarkdown>{post.aiAnalysis}</ReactMarkdown>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

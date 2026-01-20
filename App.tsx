@@ -524,68 +524,70 @@ const App: React.FC = () => {
 
     if (isAnalyzing) {
       return (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gray-50/90 backdrop-blur-xl animate-in fade-in duration-500">
-          {/* 背景装饰流光 */}
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/10 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse delay-700" />
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 animate-in fade-in duration-500">
+          {/* 背景动态装饰 - 调整为更柔和的光晕以适应深色背景 */}
+          <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-blue-500/30 rounded-full blur-[100px] animate-pulse" />
+          <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-purple-500/30 rounded-full blur-[100px] animate-pulse delay-700" />
 
-          <div className="relative w-full max-w-sm px-8">
+          <div className="relative w-full max-w-sm px-8 z-10">
             {/* 主核心动画 */}
-            <div className="flex justify-center mb-10">
+            <div className="flex justify-center mb-12">
               <div className="relative">
-                {/* 多重脉冲扩散圈 */}
-                <div className="absolute inset-0 rounded-[2.5rem] bg-blue-500/20 animate-ping duration-[3000ms]" />
-                <div className="absolute inset-[-10px] rounded-[3rem] bg-indigo-500/10 animate-pulse duration-[2000ms]" />
+                {/* 外部光环 */}
+                <div className="absolute inset-0 rounded-[2.5rem] bg-white/20 animate-ping duration-[3000ms]" />
+                <div className="absolute inset-[-15px] rounded-[3rem] bg-indigo-400/10 animate-pulse duration-[2000ms]" />
 
-                <div className="relative w-24 h-24 rounded-[2.5rem] bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 flex items-center justify-center shadow-2xl shadow-indigo-200 ring-4 ring-white/50 overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                  <Icons.Activity className="w-10 h-10 text-white animate-bounce" />
+                <div className="relative w-28 h-28 rounded-[2.5rem] bg-white/10 backdrop-blur-md flex items-center justify-center shadow-2xl ring-1 ring-white/30 overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                  <Icons.Activity className="w-12 h-12 text-white drop-shadow-lg" />
                 </div>
               </div>
             </div>
 
-            {/* 文字提示 */}
-            <div className="text-center mb-10 space-y-2">
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight">AI 智能分析中</h2>
-              <p className="text-gray-400 text-sm font-medium">Gemini 正在为您的每一餐<br />构建深度营养报告...</p>
+            {/* 文字提示 - 白色文字适配深色背景 */}
+            <div className="text-center mb-12 space-y-3">
+              <h2 className="text-3xl font-black text-white tracking-tight drop-shadow-md">AI 智能分析中</h2>
+              <p className="text-blue-100 text-sm font-medium tracking-wide">Gemini 正在为您的每一餐<br />构建深度营养报告...</p>
             </div>
 
-            {/* 精英进度条 */}
-            <div className="bg-white/50 backdrop-blur-sm rounded-[2rem] p-6 border border-white shadow-xl shadow-gray-200/50 space-y-5 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500 to-indigo-600 opacity-20" />
+            {/* 精英进度条 - 玻璃拟态风格 */}
+            <div className="bg-white/10 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/10 shadow-2xl relative overflow-hidden">
+              {/* 左侧进度线 */}
+              <div className="absolute top-0 left-8 w-[2px] h-full bg-white/10" />
 
-              <div className="flex items-center gap-4 group">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shadow-sm">
-                  <Icons.Check className="w-5 h-5 text-emerald-500" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[14px] font-black text-gray-800">读取饮食记录</span>
-                  <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Completed</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shadow-sm relative">
-                  <Icons.Loader className="w-5 h-5 text-blue-600 animate-spin" />
-                  <div className="absolute inset-0 rounded-xl bg-blue-400/20 animate-ping" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[14px] font-black text-blue-600">计算营养成分</span>
-                  <div className="flex gap-1 mt-1">
-                    <div className="w-1 h-1 rounded-full bg-blue-600 animate-bounce delay-100" />
-                    <div className="w-1 h-1 rounded-full bg-blue-600 animate-bounce delay-200" />
-                    <div className="w-1 h-1 rounded-full bg-blue-600 animate-bounce delay-300" />
+              <div className="space-y-8 relative">
+                <div className="flex items-center gap-5 group">
+                  <div className="w-8 h-8 rounded-full bg-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-900/20 ring-4 ring-emerald-500/20 z-10">
+                    <Icons.Check className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[15px] font-bold text-white tracking-wide">读取饮食记录</span>
+                    <span className="text-[10px] text-emerald-300 font-black uppercase tracking-widest mt-0.5">Completed</span>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-4 opacity-40">
-                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                  <Icons.Chef className="w-5 h-5 text-gray-400" />
+                <div className="flex items-center gap-5">
+                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-lg ring-4 ring-white/20 z-10 relative">
+                    <Icons.Loader className="w-4 h-4 text-indigo-600 animate-spin" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[15px] font-bold text-white tracking-wide">计算营养成分</span>
+                    <div className="flex gap-1.5 mt-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-white animate-bounce delay-75" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-white animate-bounce delay-150" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-white animate-bounce delay-300" />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[14px] font-black text-gray-400">生成个性化建议</span>
-                  <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5">Waiting</span>
+
+                <div className="flex items-center gap-5 opacity-40">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center ring-4 ring-white/5 z-10">
+                    <Icons.Chef className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[15px] font-bold text-white tracking-wide">生成个性化建议</span>
+                    <span className="text-[10px] text-blue-200 font-black uppercase tracking-widest mt-0.5">Waiting</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -730,16 +732,18 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 relative z-10">
+            <div className="flex items-center gap-2 relative z-10">
               <button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing}
-                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white backdrop-blur-md active:scale-90 transition-all"
+                className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full text-white transition-all active:scale-95 border border-white/10"
               >
-                <Icons.History className="w-4 h-4" />
+                <Icons.History className="w-3.5 h-3.5" />
+                <span className="text-xs font-bold">重新生成</span>
               </button>
+
               <div className="flex flex-col items-end">
-                <span className="text-[10px] text-blue-100 uppercase font-bold tracking-wider mb-0.5">Total Intake</span>
+                <span className="text-[10px] text-blue-100 font-bold mb-0.5 opacity-90">今日摄入</span>
                 <div className="text-lg font-black text-white bg-white/10 px-3 py-0.5 rounded-lg backdrop-blur-md shadow-sm border border-white/10">
                   {analysis.macros.calories} <span className="text-[10px] font-normal opacity-80">kcal</span>
                 </div>
