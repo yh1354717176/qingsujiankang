@@ -859,7 +859,7 @@ const App: React.FC = () => {
           { id: 'tracker', icon: Icons.Utensils, label: '记录' },
           { id: 'profile', icon: Icons.User, label: '我的' },
         ].map((tab) => {
-          const isActive = activeTab === tab.id;
+          const isActive = activeTab === tab.id || (tab.id === 'tracker' && activeTab === 'analysis');
           return (
             <button
               key={tab.id}
