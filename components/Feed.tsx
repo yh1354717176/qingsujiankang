@@ -313,6 +313,11 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
                     key={post.id}
                     className="animate-in fade-in slide-in-from-bottom duration-500"
                     style={{ animationDelay: `${index * 100}ms` }}
+                    onClick={() => {
+                      // 社区动态的时间通常是 "2026-01-20 14:10" 格式，提取日期部分
+                      const date = post.time.split(' ')[0];
+                      onNavigateToDate(date);
+                    }}
                   >
                     {renderPost(post, false)}
                   </div>
@@ -332,40 +337,6 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
           </div>
         </div>
       </PullToRefresh>
-
-      {/* Post Detail Modal */}
-      {selectedPost && (
-        <div className="fixed inset-0 z-50 bg-gray-50 overflow-hidden animate-in fade-in duration-300">
-          {/* Header */}
-          <div
-            className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 fixed top-0 left-0 right-0 z-10 px-5 pb-4 shadow-lg"
-            style={{ paddingTop: 'max(16px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px))' }}
-          >
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setSelectedPost(null)}
-                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all"
-              >
-                <Icons.ChevronLeft className="w-5 h-5 text-white" />
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-white">动态详情</h1>
-                <p className="text-blue-200 text-xs">查看完整分析报告</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div
-            className="h-full overflow-y-auto no-scrollbar"
-            style={{ paddingTop: 'max(90px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 90px))' }}
-          >
-            <div className="px-4 pb-20">
-              {renderPost(selectedPost, true)}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Image Viewer */}
       {viewerImages && (

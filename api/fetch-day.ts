@@ -43,7 +43,7 @@ export default async function handler(req: any, res: any) {
 
         // 获取该日分析结果
         const analysis = await sql`
-            SELECT macros, feedback, meal_feedback, plan 
+            SELECT macros, feedback, meal_feedback as "mealFeedback", plan 
             FROM qingshu_analysis 
             WHERE user_id = ${userId} AND log_date = ${date}
         `;
