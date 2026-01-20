@@ -692,55 +692,62 @@ const App: React.FC = () => {
 
           <div className="p-4 space-y-6 pb-12 flex-1">
             {/* Chart Section */}
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+            <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-100">
               <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
                 <Icons.Activity className="w-5 h-5 text-blue-500" />
                 营养摄入估算
               </h3>
-              <div className="h-64 w-full">
+              <div className="h-64 w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={chartData}
                       cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
+                      cy="45%"
+                      innerRadius={65}
+                      outerRadius={85}
                       paddingAngle={5}
                       dataKey="value"
+                      stroke="none"
                     >
                       {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={`cell-${index}`} fill={['#FF6B6B', '#00C49F', '#FFBB28'][index]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => `${value}g`} />
-                    <Legend verticalAlign="bottom" height={36} />
+                    <Tooltip />
+                    <Legend
+                      verticalAlign="bottom"
+                      align="center"
+                      iconType="rect"
+                      formatter={(value) => <span className="text-xs font-bold text-gray-500">{value}</span>}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center mt-2">
-                <div className="bg-orange-50 p-2 rounded-lg">
-                  <div className="text-xs text-gray-500">蛋白质</div>
-                  <div className="font-bold text-orange-500">{analysis.macros.protein}g</div>
+
+              <div className="grid grid-cols-3 gap-3 mt-4">
+                <div className="bg-orange-50/50 p-3 rounded-2xl text-center">
+                  <div className="text-[11px] text-gray-400 font-bold mb-1">蛋白质</div>
+                  <div className="text-lg font-black text-orange-500">{analysis.macros.protein}<span className="text-[10px] ml-0.5">g</span></div>
                 </div>
-                <div className="bg-green-50 p-2 rounded-lg">
-                  <div className="text-xs text-gray-500">碳水</div>
-                  <div className="font-bold text-green-500">{analysis.macros.carbs}g</div>
+                <div className="bg-green-50/50 p-3 rounded-2xl text-center">
+                  <div className="text-[11px] text-gray-400 font-bold mb-1">碳水</div>
+                  <div className="text-lg font-black text-green-500">{analysis.macros.carbs}<span className="text-[10px] ml-0.5">g</span></div>
                 </div>
-                <div className="bg-yellow-50 p-2 rounded-lg">
-                  <div className="text-xs text-gray-500">脂肪</div>
-                  <div className="font-bold text-yellow-500">{analysis.macros.fat}g</div>
+                <div className="bg-yellow-50/50 p-3 rounded-2xl text-center">
+                  <div className="text-[11px] text-gray-400 font-bold mb-1">脂肪</div>
+                  <div className="text-lg font-black text-yellow-500">{analysis.macros.fat}<span className="text-[10px] ml-0.5">g</span></div>
                 </div>
               </div>
             </div>
 
             {/* Overall Feedback Section */}
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-2xl shadow-sm border border-indigo-100">
-              <h3 className="font-bold text-indigo-900 mb-2 flex items-center gap-2">
+            <div className="bg-[#F5F3FF] p-6 rounded-[2rem] border border-indigo-50 shadow-sm">
+              <h3 className="font-bold text-indigo-900 mb-3 flex items-center gap-2">
                 <Icons.User className="w-5 h-5" />
                 当日总结
               </h3>
-              <p className="text-indigo-800 text-sm leading-relaxed">
+              <p className="text-indigo-800 text-[14px] leading-relaxed font-medium">
                 {analysis.feedback}
               </p>
             </div>
@@ -749,22 +756,13 @@ const App: React.FC = () => {
             <div className="space-y-3">
               <h3 className="font-bold text-gray-700 ml-1">分餐点评</h3>
               {Object.entries(mealFeedbackMap).map(([type, feedback]) => (
-                <div key={type} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                  <h4 className="text-sm font-bold text-gray-800 mb-1">{type}</h4>
-                  <p className="text-xs text-gray-600">{feedback}</p>
-                </div>
+                feedback && (
+                  <div key={type} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <h4 className="text-sm font-bold text-gray-800 mb-1">{type}</h4>
+                    <p className="text-xs text-gray-600">{feedback}</p>
+                  </div>
+                )
               ))}
-            </div>
-
-            {/* Plan Section */}
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-              <h3 className="font-bold text-gray-800 mb-4 text-lg border-b pb-2 flex items-center gap-2">
-                <Icons.Chef className="w-5 h-5 text-green-600" />
-                明日减肥计划
-              </h3>
-              <div className="prose prose-sm max-w-none text-gray-600 prose-headings:text-gray-800 prose-headings:font-bold prose-strong:text-gray-800 prose-li:marker:text-blue-500">
-                <ReactMarkdown>{analysis.plan}</ReactMarkdown>
-              </div>
             </div>
           </div>
         </div>
@@ -779,7 +777,16 @@ const App: React.FC = () => {
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto no-scrollbar relative w-full"
       >
-        {activeTab === 'feed' && <Feed showToast={showToast} onNavigateToProfile={() => setActiveTab('profile')} />}
+        {activeTab === 'feed' && (
+          <Feed
+            showToast={showToast}
+            onNavigateToProfile={() => setActiveTab('profile')}
+            onNavigateToDate={(date) => {
+              setCurrentDate(date);
+              setActiveTab('analysis');
+            }}
+          />
+        )}
         {activeTab === 'tracker' && renderTracker()}
         {activeTab === 'analysis' && renderAnalysis()}
         {activeTab === 'profile' && (
@@ -790,7 +797,7 @@ const App: React.FC = () => {
               onLogout={handleLogout}
               onNavigateToDate={(date) => {
                 setCurrentDate(date);
-                setActiveTab('tracker'); // Go to tracker tab for that date
+                setActiveTab('analysis');
               }}
               showToast={showToast}
             />

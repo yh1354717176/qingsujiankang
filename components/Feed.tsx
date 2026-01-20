@@ -22,12 +22,13 @@ interface FeedPost {
 interface FeedProps {
   showToast: (msg: string, type?: 'success' | 'error') => void;
   onNavigateToProfile: () => void;
+  onNavigateToDate: (date: string) => void;
 }
 
 /**
  * @description 社区页面组件
  */
-export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile }) => {
+export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNavigateToDate }) => {
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<FeedPost | null>(null);
@@ -211,47 +212,12 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile }) =>
     );
   };
 
-  // --- Detail View ---
-  if (selectedPost) {
-    return (
-      <div className="animate-in slide-in-from-right duration-300 bg-gray-50 min-h-full flex flex-col h-full relative z-[60]">
-        <div
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 sticky top-0 left-0 right-0 z-10 px-4 pb-4 flex items-center gap-4 shadow-lg text-white"
-          style={{ paddingTop: 'max(16px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px))' }}
-        >
-          <button
-            onClick={() => setSelectedPost(null)}
-            className="bg-white/20 hover:bg-white/30 text-white rounded-full p-1.5 transition-all active:scale-90"
-          >
-            <Icons.ChevronLeft className="w-6 h-6" />
-          </button>
-          <div>
-            <h1 className="text-lg font-bold leading-tight">动态详情</h1>
-            <p className="text-[10px] text-blue-100 uppercase tracking-wider">Post Details</p>
-          </div>
-        </div>
-        <div className="p-4 pb-20 flex-1 overflow-y-auto no-scrollbar">
-          <div className="max-w-2xl mx-auto">
-            {renderPost(selectedPost, true)}
-          </div>
-        </div>
-        {viewerImages && (
-          <ImageViewer
-            images={viewerImages}
-            initialIndex={viewerIndex}
-            onClose={() => setViewerImages(null)}
-          />
-        )}
-      </div>
-    );
-  }
-
   // --- Feed List View ---
   return (
     <div className="animate-in fade-in duration-500 bg-gray-50 h-full flex flex-col relative">
       {/* Fixed Header */}
       <div
-        className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 fixed top-0 left-0 right-0 z-10 px-5 pb-4 shadow-lg"
+        className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 fixed top-0 left-0 right-0 z-10 px-5 pb-4 shadow-lg text-center"
         style={{ paddingTop: 'max(16px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px))' }}
       >
         <div className="flex items-center justify-between">
@@ -292,10 +258,8 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile }) =>
         <div className="min-h-full">
           {/* Content */}
           <div className="px-4 space-y-4 pb-12">
-
-
             {/* Posts */}
-            <div className="space-y-4">
+            <div className="space-y-4 pt-2">
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                   <Icons.Loader className="w-10 h-10 animate-spin mb-4" />
@@ -312,13 +276,17 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile }) =>
                     key={post.id}
                     className="animate-in fade-in slide-in-from-bottom duration-500"
                     style={{ animationDelay: `${index * 100}ms` }}
+                    onClick={() => {
+                      // 社区动态的时间通常是 "2026-01-20 14:10" 格式，提取日期部分
+                      const date = post.time.split(' ')[0];
+                      onNavigateToDate(date);
+                    }}
                   >
                     {renderPost(post, false)}
                   </div>
                 ))
               )}
             </div>
-
             {/* Footer */}
             {!isLoading && posts.length > 0 && (
               <div className="text-center py-6">
@@ -332,14 +300,6 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile }) =>
           </div>
         </div>
       </PullToRefresh>
-
-      {viewerImages && (
-        <ImageViewer
-          images={viewerImages}
-          initialIndex={viewerIndex}
-          onClose={() => setViewerImages(null)}
-        />
-      )}
     </div>
   );
 };
