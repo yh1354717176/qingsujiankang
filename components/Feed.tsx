@@ -126,46 +126,46 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile }) =>
     return (
       <div
         key={post.id}
-        className={`bg-white rounded-3xl p-5 shadow-sm border border-gray-100 ${!isDetail ? 'active:scale-[0.98] transition-all cursor-pointer hover:shadow-md' : ''}`}
+        className={`bg-white rounded-[2rem] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100/50 ${!isDetail ? 'active:scale-[0.97] transition-all cursor-pointer hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]' : ''}`}
         onClick={() => !isDetail && setSelectedPost(post)}
       >
         {/* Header */}
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex gap-3 items-center">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white overflow-hidden ring-2 ring-white shadow-lg">
+        <div className="flex justify-between items-start mb-5">
+          <div className="flex gap-3 items-center min-w-0">
+            <div className="relative shrink-0">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white overflow-hidden shadow-md ring-2 ring-white/50">
                 {post.avatar ? (
                   <img src={post.avatar} className="w-full h-full object-cover" />
                 ) : (
-                  <Icons.User className="w-6 h-6" />
+                  <Icons.User className="w-5 h-5" />
                 )}
               </div>
               {post.streak && post.streak >= 7 && (
-                <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-orange-400 to-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg">
+                <div className="absolute -top-1.5 -left-1.5 bg-gradient-to-r from-orange-400 to-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-lg transform -rotate-12 border border-white">
                   🔥{post.streak}
                 </div>
               )}
             </div>
             <div className="min-w-0">
-              <div className="font-bold text-gray-800 line-clamp-1">{post.userName}</div>
-              <div className="text-xs text-gray-400 flex items-center gap-1.5 whitespace-nowrap">
+              <div className="font-bold text-gray-900 text-[15px] line-clamp-1 mb-0.5">{post.userName}</div>
+              <div className="text-[11px] text-gray-400 flex items-center gap-1.5 whitespace-nowrap">
                 <span className="shrink-0">{post.time}</span>
-                <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
-                <span className={`bg-gradient-to-r ${getMealTypeColor(post.mealType)} text-transparent bg-clip-text font-medium truncate`}>
+                <span className="w-0.5 h-0.5 rounded-full bg-gray-300 shrink-0" />
+                <span className={`bg-gradient-to-r ${getMealTypeColor(post.mealType)} text-transparent bg-clip-text font-bold`}>
                   {post.mealType}
                 </span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-1.5 rounded-full border border-green-100 shrink-0">
-            <Icons.Activity className="w-3.5 h-3.5 text-green-500" />
-            <span className="text-sm font-bold text-green-600">{post.calories}</span>
-            <span className="text-xs text-green-500">kcal</span>
+          <div className="flex items-center gap-1 bg-emerald-500 px-2.5 py-1.5 rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.2)] shrink-0">
+            <Icons.Activity className="w-3 h-3 text-white" />
+            <span className="text-[13px] font-black text-white">{post.calories}</span>
+            <span className="text-[10px] text-emerald-100 font-bold">kcal</span>
           </div>
         </div>
 
         {/* Content */}
-        <p className={`text-gray-700 leading-relaxed mb-4 ${!isDetail ? 'line-clamp-3' : ''}`}>
+        <p className={`text-gray-600 text-[14px] leading-relaxed mb-5 px-0.5 ${!isDetail ? 'line-clamp-3' : ''}`}>
           {post.content}
         </p>
 
@@ -188,19 +188,22 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile }) =>
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-4">
+        <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-1">
           <button
-            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${isLiked
-              ? 'bg-red-50 text-red-500'
-              : 'hover:bg-gray-50 text-gray-400 hover:text-red-400'
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${isLiked
+              ? 'bg-rose-50 text-rose-500 shadow-sm'
+              : 'bg-gray-50 text-gray-400 hover:text-rose-400'
               }`}
             onClick={(e) => handleLike(post.id, e)}
           >
-            <Icons.Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-            <span className="text-sm font-medium">{post.likes + (isLiked ? 1 : 0)}</span>
+            <Icons.Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+            <span className="text-xs font-bold">{post.likes + (isLiked ? 1 : 0)}</span>
           </button>
           {!isDetail && (
-            <span className="text-xs text-gray-300">点击查看详情</span>
+            <div className="flex items-center gap-1 text-[11px] text-blue-500 font-bold bg-blue-50 px-3 py-1.5 rounded-xl">
+              <span>查看报告详情</span>
+              <Icons.ChevronRight className="w-3 h-3" />
+            </div>
           )}
         </div>
       </div>
