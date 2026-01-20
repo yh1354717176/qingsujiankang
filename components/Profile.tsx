@@ -4,6 +4,7 @@ import { Icons } from './Icons';
 import { fetchHistory } from '../services/geminiService';
 import { compressImage, uploadToImgBB } from '../utils/imageHelper';
 import PullToRefresh from 'react-simple-pull-to-refresh';
+import { PullToRefresh as CustomPullToRefresh } from './PullToRefresh';
 
 interface ProfileProps {
   user: UserProfile;
@@ -126,11 +127,10 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
           <h1 className="text-lg font-bold text-gray-900">历史分析记录</h1>
         </div>
 
-        <PullToRefresh
-          className="h-full overflow-y-auto no-scrollbar"
+        <CustomPullToRefresh
+          className="h-full no-scrollbar"
           onRefresh={loadCloudHistory}
-          resistance={2}
-          pullDownThreshold={80}
+          isPullable={true}
           pullingContent={<div className="text-gray-600 py-4 text-center font-medium text-xs">下拉刷新历史</div>}
           refreshingContent={
             <div className="py-4 flex flex-col items-center gap-2">
@@ -178,19 +178,17 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
               ))
             )}
           </div>
-        </PullToRefresh>
+        </CustomPullToRefresh>
       </div>
     );
   }
 
   // --- 主视图 ---
   return (
-    <PullToRefresh
-      className="h-full overflow-y-auto no-scrollbar"
+    <CustomPullToRefresh
+      className="h-full no-scrollbar"
       onRefresh={loadCloudHistory}
       isPullable={!isEditing}
-      resistance={2}
-      pullDownThreshold={80}
       pullingContent={<div className="text-gray-600 py-4 text-center font-medium text-xs">下拉刷新</div>}
       refreshingContent={
         <div className="py-4 flex flex-col items-center gap-2">
@@ -371,6 +369,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
           )}
         </div>
       </div>
-    </PullToRefresh>
+    </CustomPullToRefresh>
   );
 };

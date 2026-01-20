@@ -15,6 +15,7 @@ import { compressImage } from './utils/imageHelper';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import PullToRefresh from 'react-simple-pull-to-refresh';
+import { PullToRefresh as CustomPullToRefresh } from './components/PullToRefresh';
 
 
 // --- Helper for Mock ID ---
@@ -384,11 +385,9 @@ const App: React.FC = () => {
     const totalItems = Object.values(dayLog).flat().length;
 
     return (
-      <PullToRefresh
-        className="h-full overflow-y-auto bg-gray-50 no-scrollbar"
+      <CustomPullToRefresh
+        className="h-full bg-gray-50 no-scrollbar"
         isPullable={!isModalOpen && !isDatePickerOpen}
-        resistance={2}
-        pullDownThreshold={80}
         onRefresh={async () => {
           try {
             const cloudData = await fetchDayData(user.phoneNumber, currentDate);
@@ -516,7 +515,7 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
-      </PullToRefresh>
+      </CustomPullToRefresh>
     );
   };
 
@@ -613,11 +612,9 @@ const App: React.FC = () => {
 
     if (!analysis) {
       return (
-        <PullToRefresh
-          className="h-full overflow-y-auto bg-gray-50 no-scrollbar smooth-scroll"
+        <CustomPullToRefresh
+          className="h-full bg-gray-50 no-scrollbar smooth-scroll"
           isPullable={!isModalOpen && !isDatePickerOpen}
-          resistance={2}
-          pullDownThreshold={80}
           onRefresh={async () => {
             if (user) {
               const cloudData = await fetchDayData(user.phoneNumber, currentDate);
@@ -643,7 +640,7 @@ const App: React.FC = () => {
             <p className="text-gray-500 mt-2">请先在"记录"页面添加食物并点击生成。</p>
             <button onClick={() => setActiveTab('tracker')} className="mt-6 bg-blue-100 text-blue-700 px-6 py-2 rounded-full font-medium">去记录</button>
           </div>
-        </PullToRefresh>
+        </CustomPullToRefresh>
       );
     }
 
@@ -689,11 +686,9 @@ const App: React.FC = () => {
     };
 
     return (
-      <PullToRefresh
-        className="h-full overflow-y-auto bg-gray-50 no-scrollbar smooth-scroll"
+      <CustomPullToRefresh
+        className="h-full bg-gray-50 no-scrollbar smooth-scroll"
         isPullable={!isModalOpen && !isDatePickerOpen}
-        resistance={2}
-        pullDownThreshold={80}
         onRefresh={async () => {
           if (user) {
             try {
@@ -880,7 +875,7 @@ const App: React.FC = () => {
 
           </div>
         </div>
-      </PullToRefresh>
+      </CustomPullToRefresh>
     );
   };
 

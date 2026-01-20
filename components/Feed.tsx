@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { ImageViewer } from './ImageViewer';
 import PullToRefresh from 'react-simple-pull-to-refresh';
+import { PullToRefresh as CustomPullToRefresh } from './PullToRefresh';
 import ReactMarkdown from 'react-markdown';
 import { fetchFeed } from '../services/geminiService';
 
@@ -279,10 +280,10 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
       {/* Spacer */}
       <div style={{ height: 'max(80px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 80px))' }} className="shrink-0" />
 
-      <PullToRefresh
+      <CustomPullToRefresh
         onRefresh={handleRefresh}
-        resistance={2}
-        pullDownThreshold={80}
+        className="h-full w-full no-scrollbar"
+        isPullable={true}
         pullingContent={
           <div className="text-gray-400 text-sm py-4 text-center w-full">下拉刷新</div>
         }
@@ -292,7 +293,6 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
             <span>刷新中...</span>
           </div>
         }
-        className="h-full overflow-y-auto w-full no-scrollbar"
       >
         <div className="min-h-full">
           {/* Content */}
@@ -338,7 +338,7 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
             )}
           </div>
         </div>
-      </PullToRefresh>
+      </CustomPullToRefresh>
 
       {/* Image Viewer */}
       {viewerImages && (
