@@ -743,7 +743,6 @@ const App: React.FC = () => {
               </button>
 
               <div className="flex flex-col items-end">
-                <span className="text-[10px] text-blue-100 font-bold mb-0.5 opacity-90">今日摄入</span>
                 <div className="text-lg font-black text-white bg-white/10 px-3 py-0.5 rounded-lg backdrop-blur-md shadow-sm border border-white/10">
                   {analysis.macros.calories} <span className="text-[10px] font-normal opacity-80">kcal</span>
                 </div>
