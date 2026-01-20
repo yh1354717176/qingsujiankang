@@ -281,6 +281,8 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
 
       <PullToRefresh
         onRefresh={handleRefresh}
+        resistance={2}
+        pullDownThreshold={80}
         pullingContent={
           <div className="text-gray-400 text-sm py-4 text-center w-full">下拉刷新</div>
         }

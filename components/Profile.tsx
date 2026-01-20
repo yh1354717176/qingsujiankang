@@ -129,6 +129,8 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
         <PullToRefresh
           className="h-full overflow-y-auto no-scrollbar"
           onRefresh={loadCloudHistory}
+          resistance={2}
+          pullDownThreshold={80}
           pullingContent={<div className="text-gray-600 py-4 text-center font-medium text-xs">下拉刷新历史</div>}
           refreshingContent={
             <div className="py-4 flex flex-col items-center gap-2">
@@ -187,6 +189,8 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
       className="h-full overflow-y-auto no-scrollbar"
       onRefresh={loadCloudHistory}
       isPullable={!isEditing}
+      resistance={2}
+      pullDownThreshold={80}
       pullingContent={<div className="text-gray-600 py-4 text-center font-medium text-xs">下拉刷新</div>}
       refreshingContent={
         <div className="py-4 flex flex-col items-center gap-2">

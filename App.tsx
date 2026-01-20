@@ -387,6 +387,8 @@ const App: React.FC = () => {
       <PullToRefresh
         className="h-full overflow-y-auto bg-gray-50 no-scrollbar"
         isPullable={!isModalOpen && !isDatePickerOpen}
+        resistance={2}
+        pullDownThreshold={80}
         onRefresh={async () => {
           try {
             const cloudData = await fetchDayData(user.phoneNumber, currentDate);
@@ -614,6 +616,8 @@ const App: React.FC = () => {
         <PullToRefresh
           className="h-full overflow-y-auto bg-gray-50 no-scrollbar smooth-scroll"
           isPullable={!isModalOpen && !isDatePickerOpen}
+          resistance={2}
+          pullDownThreshold={80}
           onRefresh={async () => {
             if (user) {
               const cloudData = await fetchDayData(user.phoneNumber, currentDate);
@@ -688,6 +692,8 @@ const App: React.FC = () => {
       <PullToRefresh
         className="h-full overflow-y-auto bg-gray-50 no-scrollbar smooth-scroll"
         isPullable={!isModalOpen && !isDatePickerOpen}
+        resistance={2}
+        pullDownThreshold={80}
         onRefresh={async () => {
           if (user) {
             try {
