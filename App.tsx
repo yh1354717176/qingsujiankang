@@ -61,6 +61,7 @@ const App: React.FC = () => {
   const [foodHistory, setFoodHistory] = useState<string[]>([]); // History State
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [isSavingMeal, setIsSavingMeal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Viewer State (Global for tracker)
@@ -269,10 +270,12 @@ const App: React.FC = () => {
   };
 
   const handleBatchAdd = async () => {
-    if (!batchInput.trim()) {
-      showToast("请输入食物名称");
+    if (!batchInput.trim() || isSavingMeal) {
+      if (!batchInput.trim()) showToast("请输入食物名称");
       return;
     }
+
+    setIsSavingMeal(true);
 
     const lines = batchInput.split('\n').map(l => l.trim()).filter(l => l);
 
@@ -305,9 +308,12 @@ const App: React.FC = () => {
         showToast("记录已保存", 'success');
       } catch (err: any) {
         showToast(`保存失败: ${err.message}`);
+      } finally {
+        setIsSavingMeal(false);
       }
     } else {
       showToast("请先登录以保存记录。");
+      setIsSavingMeal(false);
     }
   };
 
@@ -373,8 +379,8 @@ const App: React.FC = () => {
     if (isInitialLoading) return null;
     if (!user) return <Auth onLogin={handleLogin} />;
 
-    // 计算今日总热量
-    const todayCalories = Object.values(dayLog).flat().reduce((sum, item) => {
+    // 计算今日总热量 - 优先使用 AI 分析结果，如果没有则使用估算值
+    const todayCalories = analysis?.macros?.calories || Object.values(dayLog).flat().reduce((sum, item) => {
       // 如果食物名包含数字可能是热量，否则估算100kcal
       return sum + 100;
     }, 0);
@@ -500,12 +506,12 @@ const App: React.FC = () => {
 
             <div className="px-4 pt-6 pb-12">
               <button
-                onClick={handleAnalyze}
+                onClick={analysis ? () => setActiveTab('analysis') : handleAnalyze}
                 disabled={totalItems === 0 || isAnalyzing}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 active:scale-95 transition-all text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 flex items-center justify-center gap-3"
               >
                 {isAnalyzing ? <Icons.Loader className="w-6 h-6 animate-spin" /> : <Icons.Chef className="w-6 h-6" />}
-                <span>{isAnalyzing ? '分析中...' : totalItems > 0 ? '生成 AI 减肥计划' : '请先记录今日饮食'}</span>
+                <span>{isAnalyzing ? '分析中...' : analysis ? '查看 AI 减肥计划' : totalItems > 0 ? '生成 AI 减肥计划' : '请先记录今日饮食'}</span>
               </button>
             </div>
           </div>
@@ -652,12 +658,30 @@ const App: React.FC = () => {
             className="bg-blue-600 sticky top-0 left-0 right-0 z-20 px-5 pb-4 shadow-lg flex items-center justify-between"
             style={{ paddingTop: 'max(16px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px))' }}
           >
-            <div className="flex flex-col">
-              <h2 className="text-xl font-bold text-white leading-tight">AI 分析报告</h2>
-              <span className="text-[10px] text-blue-100 font-medium tracking-wide uppercase">{currentDate}</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setActiveTab('tracker')}
+                className="p-1.5 -ml-1 text-white/80 hover:text-white transition-colors"
+              >
+                <Icons.ChevronLeft className="w-6 h-6" />
+              </button>
+              <div className="flex flex-col">
+                <h2 className="text-xl font-bold text-white leading-tight">AI 分析报告</h2>
+                <span className="text-[10px] text-blue-100 font-medium tracking-wide uppercase">{currentDate}</span>
+              </div>
             </div>
-            <div className="text-sm font-bold text-blue-600 bg-white px-4 py-1.5 rounded-full shadow-sm">
-              {analysis.macros.calories} <span className="text-[10px] opacity-60">kcal</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+                className="text-xs font-bold text-white bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-full backdrop-blur-sm transition-all flex items-center gap-1.5 active:scale-95"
+              >
+                <Icons.History className="w-3.5 h-3.5" />
+                重新生成
+              </button>
+              <div className="text-sm font-bold text-blue-600 bg-white px-4 py-1.5 rounded-full shadow-sm">
+                {analysis.macros.calories} <span className="text-[10px] opacity-60">kcal</span>
+              </div>
             </div>
           </div>
 
@@ -750,7 +774,7 @@ const App: React.FC = () => {
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto no-scrollbar relative w-full"
       >
-        {activeTab === 'feed' && <Feed showToast={showToast} />}
+        {activeTab === 'feed' && <Feed showToast={showToast} onNavigateToProfile={() => setActiveTab('profile')} />}
         {activeTab === 'tracker' && renderTracker()}
         {activeTab === 'analysis' && renderAnalysis()}
         {activeTab === 'profile' && (
@@ -779,7 +803,6 @@ const App: React.FC = () => {
         {[
           { id: 'feed', icon: Icons.Home, label: '社区' },
           { id: 'tracker', icon: Icons.Utensils, label: '记录' },
-          { id: 'analysis', icon: Icons.Activity, label: '分析' },
           { id: 'profile', icon: Icons.User, label: '我的' },
         ].map((tab) => {
           const isActive = activeTab === tab.id;
@@ -909,10 +932,19 @@ const App: React.FC = () => {
 
             <button
               onClick={handleBatchAdd}
-              disabled={!batchInput.trim() || isCompressing}
-              className="w-full bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl mt-4 active:scale-95 transition-all shadow-lg shadow-blue-200 shrink-0"
+              disabled={!batchInput.trim() || isCompressing || isSavingMeal}
+              className="w-full bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl mt-4 active:scale-95 transition-all shadow-lg shadow-blue-200 shrink-0 flex items-center justify-center gap-2"
             >
-              {isCompressing ? '处理图片中...' : '确认添加'}
+              {isSavingMeal ? (
+                <>
+                  <Icons.Loader className="w-5 h-5 animate-spin" />
+                  <span>正在保存...</span>
+                </>
+              ) : isCompressing ? (
+                '处理图片中...'
+              ) : (
+                '确认添加'
+              )}
             </button>
           </div>
         </div>

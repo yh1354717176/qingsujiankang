@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { ImageViewer } from './ImageViewer';
 import PullToRefresh from 'react-simple-pull-to-refresh';
+import ReactMarkdown from 'react-markdown';
 import { fetchFeed } from '../services/geminiService';
 
 interface FeedPost {
@@ -20,12 +21,13 @@ interface FeedPost {
 
 interface FeedProps {
   showToast: (msg: string, type?: 'success' | 'error') => void;
+  onNavigateToProfile: () => void;
 }
 
 /**
  * @description 社区页面组件
  */
-export const Feed: React.FC<FeedProps> = ({ showToast }) => {
+export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile }) => {
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<FeedPost | null>(null);
@@ -144,18 +146,18 @@ export const Feed: React.FC<FeedProps> = ({ showToast }) => {
                 </div>
               )}
             </div>
-            <div>
-              <div className="font-bold text-gray-800">{post.userName}</div>
-              <div className="text-xs text-gray-400 flex items-center gap-1.5">
-                <span>{post.time}</span>
-                <span className="w-1 h-1 rounded-full bg-gray-300" />
-                <span className={`bg-gradient-to-r ${getMealTypeColor(post.mealType)} text-transparent bg-clip-text font-medium`}>
+            <div className="min-w-0">
+              <div className="font-bold text-gray-800 line-clamp-1">{post.userName}</div>
+              <div className="text-xs text-gray-400 flex items-center gap-1.5 whitespace-nowrap">
+                <span className="shrink-0">{post.time}</span>
+                <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
+                <span className={`bg-gradient-to-r ${getMealTypeColor(post.mealType)} text-transparent bg-clip-text font-medium truncate`}>
                   {post.mealType}
                 </span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-1.5 rounded-full border border-green-100">
+          <div className="flex items-center gap-1.5 bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-1.5 rounded-full border border-green-100 shrink-0">
             <Icons.Activity className="w-3.5 h-3.5 text-green-500" />
             <span className="text-sm font-bold text-green-600">{post.calories}</span>
             <span className="text-xs text-green-500">kcal</span>
@@ -172,16 +174,16 @@ export const Feed: React.FC<FeedProps> = ({ showToast }) => {
 
         {/* AI Analysis - Detail View Only */}
         {isDetail && post.aiAnalysis && (
-          <div className="mt-4 bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-2xl border border-blue-100">
-            <h3 className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                <Icons.Activity className="w-3.5 h-3.5 text-white" />
+          <div className="mt-6 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+            <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b flex items-center gap-2 whitespace-nowrap">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-lg shadow-green-100">
+                <Icons.Activity className="w-4 h-4 text-white" />
               </div>
-              AI 营养分析
+              AI 营养分析报告
             </h3>
-            <p className="text-sm text-blue-900 leading-relaxed">
-              {post.aiAnalysis}
-            </p>
+            <div className="prose prose-sm max-w-none text-gray-600 prose-headings:text-gray-800 prose-headings:font-bold prose-strong:text-gray-800 prose-li:marker:text-blue-500">
+              <ReactMarkdown>{post.aiAnalysis}</ReactMarkdown>
+            </div>
           </div>
         )}
 
@@ -208,18 +210,26 @@ export const Feed: React.FC<FeedProps> = ({ showToast }) => {
   // --- Detail View ---
   if (selectedPost) {
     return (
-      <div className="animate-in slide-in-from-right duration-300 bg-white min-h-full flex flex-col h-full relative z-[60]">
+      <div className="animate-in slide-in-from-right duration-300 bg-gray-50 min-h-full flex flex-col h-full relative z-[60]">
         <div
-          className="bg-white border-b border-gray-100 sticky top-0 left-0 right-0 z-10 px-4 pb-4 flex items-center gap-4 shadow-sm"
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 sticky top-0 left-0 right-0 z-10 px-4 pb-4 flex items-center gap-4 shadow-lg text-white"
           style={{ paddingTop: 'max(16px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px))' }}
         >
-          <button onClick={() => setSelectedPost(null)} className="text-gray-400 hover:text-gray-900 transition-colors p-1">
+          <button
+            onClick={() => setSelectedPost(null)}
+            className="bg-white/20 hover:bg-white/30 text-white rounded-full p-1.5 transition-all active:scale-90"
+          >
             <Icons.ChevronLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">动态详情</h1>
+          <div>
+            <h1 className="text-lg font-bold leading-tight">动态详情</h1>
+            <p className="text-[10px] text-blue-100 uppercase tracking-wider">Post Details</p>
+          </div>
         </div>
-        <div className="p-4 pb-20 flex-1 overflow-y-auto">
-          {renderPost(selectedPost, true)}
+        <div className="p-4 pb-20 flex-1 overflow-y-auto no-scrollbar">
+          <div className="max-w-2xl mx-auto">
+            {renderPost(selectedPost, true)}
+          </div>
         </div>
         {viewerImages && (
           <ImageViewer
@@ -249,9 +259,12 @@ export const Feed: React.FC<FeedProps> = ({ showToast }) => {
             <p className="text-blue-200 text-xs mt-0.5">发现健康生活方式</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+            <button
+              onClick={onNavigateToProfile}
+              className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 active:scale-95 transition-all"
+            >
               <Icons.User className="w-5 h-5 text-white" />
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -275,13 +288,7 @@ export const Feed: React.FC<FeedProps> = ({ showToast }) => {
         <div className="min-h-full">
           {/* Content */}
           <div className="px-4 space-y-4 pb-12">
-            {/* Banner - Simplified */}
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden mt-2 text-center">
-              <div className="relative z-10">
-                <h2 className="font-bold text-xl mb-1">在这个社区，每个人都在变好</h2>
-                <p className="text-white/80 text-sm">分享你的健康瞬间，见证彼此的蜕变</p>
-              </div>
-            </div>
+
 
             {/* Posts */}
             <div className="space-y-4">
