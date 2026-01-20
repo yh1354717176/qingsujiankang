@@ -144,6 +144,7 @@ const App: React.FC = () => {
           }).catch(e => console.error("Update profile failed", e));
 
           // 2. 从云端拉取全天数据
+          setIsAnalyzing(true);
           const cloudData = await fetchDayData(user.phoneNumber, currentDate);
 
           if (cloudData.segments) {
@@ -179,7 +180,6 @@ const App: React.FC = () => {
         } catch (err) {
           console.error("Failed to fetch cloud data", err);
           showToast("加载数据失败，请检查网络或重试。");
-          // 失败时不回退到本地，直接清空或报错
           setDayLog({
             [MealType.BREAKFAST]: [],
             [MealType.LUNCH]: [],
@@ -187,6 +187,8 @@ const App: React.FC = () => {
             [MealType.SNACK]: [],
           });
           setAnalysis(null);
+        } finally {
+          setIsAnalyzing(false);
         }
       }
     };
@@ -627,10 +629,10 @@ const App: React.FC = () => {
     ];
 
     const mealFeedbackMap = {
-      [MealType.BREAKFAST]: analysis.mealFeedback.breakfast,
-      [MealType.LUNCH]: analysis.mealFeedback.lunch,
-      [MealType.DINNER]: analysis.mealFeedback.dinner,
-      [MealType.SNACK]: analysis.mealFeedback.snack,
+      [MealType.BREAKFAST]: analysis?.mealFeedback?.breakfast || '',
+      [MealType.LUNCH]: analysis?.mealFeedback?.lunch || '',
+      [MealType.DINNER]: analysis?.mealFeedback?.dinner || '',
+      [MealType.SNACK]: analysis?.mealFeedback?.snack || '',
     };
 
     return (
@@ -742,27 +744,67 @@ const App: React.FC = () => {
             </div>
 
             {/* Overall Feedback Section */}
-            <div className="bg-[#F5F3FF] p-6 rounded-[2rem] border border-indigo-50 shadow-sm">
-              <h3 className="font-bold text-indigo-900 mb-3 flex items-center gap-2">
-                <Icons.User className="w-5 h-5" />
-                当日总结
-              </h3>
-              <p className="text-indigo-800 text-[14px] leading-relaxed font-medium">
-                {analysis.feedback}
-              </p>
+            <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-[1.5px] rounded-[2.5rem] shadow-xl shadow-indigo-100 overflow-hidden group">
+              <div className="bg-white rounded-[2.4rem] p-6 relative h-full">
+                {/* 装饰性背景 */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16" />
+                <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-blue-50 rounded-full" />
+
+                <h3 className="font-black text-gray-900 mb-4 flex items-center gap-3 relative z-10 text-lg">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-indigo-100">
+                    <Icons.User className="w-5 h-5 text-white" />
+                  </div>
+                  当日健康总结
+                </h3>
+                <div className="relative z-10 space-y-3">
+                  <div className="h-0.5 w-12 bg-indigo-100 rounded-full" />
+                  <p className="text-gray-700 text-[15px] leading-relaxed font-bold">
+                    {analysis.feedback}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Per Meal Analysis */}
-            <div className="space-y-3">
-              <h3 className="font-bold text-gray-700 ml-1">分餐点评</h3>
-              {Object.entries(mealFeedbackMap).map(([type, feedback]) => (
-                feedback && (
-                  <div key={type} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                    <h4 className="text-sm font-bold text-gray-800 mb-1">{type}</h4>
-                    <p className="text-xs text-gray-600">{feedback}</p>
-                  </div>
-                )
-              ))}
+            <div className="space-y-5">
+              <div className="flex items-center justify-between px-2 mb-2">
+                <div className="flex flex-col">
+                  <h3 className="font-black text-gray-900 text-xl tracking-tight">分餐营养点评</h3>
+                  <div className="h-1 w-8 bg-blue-500 rounded-full mt-1" />
+                </div>
+                <span className="text-[10px] text-gray-300 font-black tracking-[0.2em] uppercase">Detailed Review</span>
+              </div>
+
+              <div className="grid gap-4">
+                {Object.entries(mealFeedbackMap).map(([type, feedback]) => {
+                  if (!feedback) return null;
+
+                  const config: any = {
+                    [MealType.BREAKFAST]: { icon: Icons.Breakfast, color: 'orange', label: '精致早餐', bg: 'from-orange-400 to-amber-500', text: 'text-orange-600' },
+                    [MealType.LUNCH]: { icon: Icons.Lunch, color: 'green', label: '能量午餐', bg: 'from-emerald-400 to-teal-500', text: 'text-emerald-600' },
+                    [MealType.DINNER]: { icon: Icons.Dinner, color: 'indigo', label: '轻盈晚餐', bg: 'from-indigo-400 to-blue-500', text: 'text-indigo-600' },
+                    [MealType.SNACK]: { icon: Icons.Snack, color: 'purple', label: '健康加餐', bg: 'from-purple-400 to-fuchsia-500', text: 'text-purple-600' },
+                  };
+                  const theme = config[type] || config[MealType.BREAKFAST];
+
+                  return (
+                    <div key={type} className="bg-white p-5 rounded-[2.2rem] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100/50 flex gap-5 transition-all active:scale-[0.98] hover:shadow-lg">
+                      <div className={`w-16 h-16 rounded-[1.5rem] bg-gradient-to-br ${theme.bg} shrink-0 flex items-center justify-center shadow-lg shadow-${theme.color}-100 ring-4 ring-white`}>
+                        <theme.icon className="w-8 h-8 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className={`text-[13px] font-black uppercase tracking-wider ${theme.text}`}>{theme.label}</span>
+                          <div className="h-1 w-1 rounded-full bg-gray-200" />
+                        </div>
+                        <p className="text-[14px] text-gray-600 leading-snug font-bold line-clamp-3">
+                          {feedback}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
