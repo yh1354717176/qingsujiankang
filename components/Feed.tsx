@@ -160,10 +160,14 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
             </div>
             <div className="text-[11px] text-gray-400 flex items-center gap-2 whitespace-nowrap overflow-hidden">
               <span className="shrink-0">{post.time}</span>
-              <span className="w-1 h-1 rounded-full bg-gray-200 shrink-0" />
-              <span className={`bg-gradient-to-r ${getMealTypeColor(post.mealType)} text-transparent bg-clip-text font-bold`}>
-                {post.mealType}
-              </span>
+              {post.mealType && (
+                <>
+                  <span className="w-1 h-1 rounded-full bg-gray-200 shrink-0" />
+                  <span className={`bg-gradient-to-r ${getMealTypeColor(post.mealType)} text-transparent bg-clip-text font-bold`}>
+                    {post.mealType}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>

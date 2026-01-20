@@ -16,6 +16,7 @@ import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import PullToRefresh from 'react-simple-pull-to-refresh';
 import { PullToRefresh as CustomPullToRefresh } from './components/PullToRefresh';
+import { getBeijingDate } from './utils/dateHelper';
 
 
 // --- Helper for Mock ID ---
@@ -46,7 +47,7 @@ const App: React.FC = () => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
-  const [currentDate, setCurrentDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [currentDate, setCurrentDate] = useState(() => getBeijingDate());
 
   const [dayLog, setDayLog] = useState<DayLog>({
     [MealType.BREAKFAST]: [],

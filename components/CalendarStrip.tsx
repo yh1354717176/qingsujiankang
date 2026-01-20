@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Icons } from './Icons';
+import { formatDate, parseSafeDate, getBeijingDate } from '../utils/dateHelper';
 
 interface CalendarStripProps {
   selectedDate: string; // YYYY-MM-DD
@@ -41,14 +42,7 @@ export const CalendarStrip: React.FC<CalendarStripProps> = ({ selectedDate, onSe
     setDatesWithData(dates);
   }, [userPhoneNumber, selectedDate]);
 
-  const parseSafeDate = (dateStr: string) => {
-    const parts = dateStr.split('-');
-    if (parts.length !== 3) return new Date();
-    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    return isNaN(d.getTime()) ? new Date() : d;
-  };
-
-  const today = new Date().toISOString().split('T')[0];
+  const today = getBeijingDate();
 
   const generateDays = () => {
     const dates = [];
@@ -67,12 +61,7 @@ export const CalendarStrip: React.FC<CalendarStripProps> = ({ selectedDate, onSe
     return dates;
   };
 
-  const formatDate = (date: Date) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  };
+  // formatDate 已从 utils 导入
 
   const getDayName = (date: Date) => ['日', '一', '二', '三', '四', '五', '六'][date.getDay()];
 

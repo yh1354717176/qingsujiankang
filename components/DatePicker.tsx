@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
+import { getBeijingDate, parseSafeDate as parseDate } from '../utils/dateHelper';
 
 interface DatePickerProps {
     isOpen: boolean;
@@ -44,15 +45,7 @@ const generateCalendarForMonth = (year: number, month: number) => {
 };
 
 export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selectedDate, onSelect }) => {
-    const parseSafeDate = (dateStr: string) => {
-        try {
-            const parts = dateStr.split('-');
-            const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-            return isNaN(d.getTime()) ? new Date() : d;
-        } catch (e) {
-            return new Date();
-        }
-    };
+    const parseSafeDate = (dateStr: string) => parseDate(dateStr);
 
     // ⚠️ 所有 Hooks 必须在 early return 之前调用
     const [viewDate, setViewDate] = useState(() => parseSafeDate(selectedDate));
@@ -62,7 +55,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
     const [isAnimating, setIsAnimating] = useState(false);
     const slideContainerRef = useRef<HTMLDivElement>(null);
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getBeijingDate();
 
     useEffect(() => {
         if (isOpen) {
