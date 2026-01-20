@@ -388,6 +388,7 @@ const App: React.FC = () => {
 
     return (
       <PullToRefresh
+        className="flex-1 bg-gray-50"
         isPullable={!isModalOpen && !isDatePickerOpen}
         onRefresh={async () => {
           try {
@@ -417,7 +418,7 @@ const App: React.FC = () => {
           </div>
         }
       >
-        <div className="flex flex-col min-h-screen bg-gray-50">
+        <div className="flex flex-col bg-gray-50">
           {/* Fixed Header - 延伸到状态栏区域 */}
           <div
             className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white z-10 px-6 pb-8 rounded-b-[2.5rem] shadow-xl overflow-hidden relative"
@@ -526,7 +527,7 @@ const App: React.FC = () => {
 
     if (isAnalyzing) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 px-6">
+        <div className="flex flex-col items-center justify-center min-h-[80vh] bg-gradient-to-b from-gray-50 to-gray-100 px-6 py-12">
           {/* 装饰背景 */}
           <div className="absolute top-20 left-10 w-32 h-32 bg-blue-100/50 rounded-full blur-3xl" />
           <div className="absolute bottom-40 right-10 w-40 h-40 bg-purple-100/50 rounded-full blur-3xl" />
@@ -637,11 +638,15 @@ const App: React.FC = () => {
         isPullable={!isModalOpen && !isDatePickerOpen}
         onRefresh={async () => {
           if (user) {
-            const cloudData = await fetchDayData(user.phoneNumber, currentDate);
-            if (cloudData.analysis) {
-              setAnalysis(cloudData.analysis);
+            try {
+              const cloudData = await fetchDayData(user.phoneNumber, currentDate);
+              if (cloudData.analysis) {
+                setAnalysis(cloudData.analysis);
+              }
+              showToast("已刷新", 'success');
+            } catch (e) {
+              showToast("刷新失败");
             }
-            showToast("已刷新", 'success');
           }
         }}
         pullingContent={<div className="text-gray-500 py-4 text-center font-medium text-sm">下拉刷新</div>}
@@ -652,11 +657,11 @@ const App: React.FC = () => {
           </div>
         }
       >
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col bg-gray-50">
           {/* Header */}
           <div
-            className="bg-blue-600 sticky top-0 left-0 right-0 z-20 px-5 pb-4 shadow-lg flex items-center justify-between"
-            style={{ paddingTop: 'max(16px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px))' }}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 z-20 px-5 pb-6 shadow-lg flex items-center justify-between rounded-b-[2rem]"
+            style={{ paddingTop: 'max(24px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 24px))' }}
           >
             <div className="flex items-center gap-3">
               <button

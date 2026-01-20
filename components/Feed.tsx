@@ -130,37 +130,38 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile }) =>
         onClick={() => !isDetail && setSelectedPost(post)}
       >
         {/* Header */}
-        <div className="flex justify-between items-start mb-5">
-          <div className="flex gap-3 items-center min-w-0">
-            <div className="relative shrink-0">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white overflow-hidden shadow-md ring-2 ring-white/50">
-                {post.avatar ? (
-                  <img src={post.avatar} className="w-full h-full object-cover" />
-                ) : (
-                  <Icons.User className="w-5 h-5" />
-                )}
-              </div>
-              {post.streak && post.streak >= 7 && (
-                <div className="absolute -top-1.5 -left-1.5 bg-gradient-to-r from-orange-400 to-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-lg transform -rotate-12 border border-white">
-                  🔥{post.streak}
-                </div>
+        <div className="flex items-start gap-4 mb-5">
+          <div className="relative shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white overflow-hidden shadow-md ring-2 ring-white/50">
+              {post.avatar ? (
+                <img src={post.avatar} className="w-full h-full object-cover" />
+              ) : (
+                <Icons.User className="w-6 h-6" />
               )}
             </div>
-            <div className="min-w-0">
-              <div className="font-bold text-gray-900 text-[15px] line-clamp-1 mb-0.5">{post.userName}</div>
-              <div className="text-[11px] text-gray-400 flex items-center gap-1.5 whitespace-nowrap">
-                <span className="shrink-0">{post.time}</span>
-                <span className="w-0.5 h-0.5 rounded-full bg-gray-300 shrink-0" />
-                <span className={`bg-gradient-to-r ${getMealTypeColor(post.mealType)} text-transparent bg-clip-text font-bold`}>
-                  {post.mealType}
-                </span>
+            {post.streak && post.streak >= 7 && (
+              <div className="absolute -top-1.5 -left-1.5 bg-gradient-to-r from-orange-400 to-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-lg transform -rotate-12 border border-white">
+                🔥{post.streak}
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-center mb-1">
+              <div className="font-bold text-gray-900 text-[16px] line-clamp-1">{post.userName}</div>
+              <div className="flex items-center gap-1 bg-emerald-500 px-2 py-1 rounded-lg shadow-[0_4px_10px_rgba(16,185,129,0.15)] shrink-0">
+                <Icons.Activity className="w-2.5 h-2.5 text-white" />
+                <span className="text-[12px] font-black text-white leading-none">{post.calories}</span>
+                <span className="text-[9px] text-emerald-100 font-bold leading-none">kcal</span>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-1 bg-emerald-500 px-2.5 py-1.5 rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.2)] shrink-0">
-            <Icons.Activity className="w-3 h-3 text-white" />
-            <span className="text-[13px] font-black text-white">{post.calories}</span>
-            <span className="text-[10px] text-emerald-100 font-bold">kcal</span>
+            <div className="text-[11px] text-gray-400 flex items-center gap-2 whitespace-nowrap overflow-hidden">
+              <span className="shrink-0">{post.time}</span>
+              <span className="w-1 h-1 rounded-full bg-gray-200 shrink-0" />
+              <span className={`bg-gradient-to-r ${getMealTypeColor(post.mealType)} text-transparent bg-clip-text font-bold`}>
+                {post.mealType}
+              </span>
+            </div>
           </div>
         </div>
 
