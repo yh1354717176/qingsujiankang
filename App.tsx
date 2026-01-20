@@ -123,12 +123,7 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Scroll to top on tab change
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo(0, 0);
-    }
-  }, [activeTab]);
+
 
   // Load Data on User Change or Date Change
   useEffect(() => {
@@ -390,7 +385,7 @@ const App: React.FC = () => {
 
     return (
       <PullToRefresh
-        className="flex-1 bg-gray-50"
+        className="h-full overflow-y-auto bg-gray-50 no-scrollbar"
         isPullable={!isModalOpen && !isDatePickerOpen}
         onRefresh={async () => {
           try {
@@ -529,46 +524,69 @@ const App: React.FC = () => {
 
     if (isAnalyzing) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[80vh] bg-gradient-to-b from-gray-50 to-gray-100 px-6 py-12">
-          {/* 装饰背景 */}
-          <div className="absolute top-20 left-10 w-32 h-32 bg-blue-100/50 rounded-full blur-3xl" />
-          <div className="absolute bottom-40 right-10 w-40 h-40 bg-purple-100/50 rounded-full blur-3xl" />
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gray-50/90 backdrop-blur-xl animate-in fade-in duration-500">
+          {/* 背景装饰流光 */}
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/10 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse delay-700" />
 
-          {/* 主要内容卡片 */}
-          <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/50 max-w-sm w-full">
-            {/* 动态 loading 图标 */}
-            <div className="flex justify-center mb-6">
+          <div className="relative w-full max-w-sm px-8">
+            {/* 主核心动画 */}
+            <div className="flex justify-center mb-10">
               <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-200">
-                  <Icons.Chef className="w-10 h-10 text-white" />
+                {/* 多重脉冲扩散圈 */}
+                <div className="absolute inset-0 rounded-[2.5rem] bg-blue-500/20 animate-ping duration-[3000ms]" />
+                <div className="absolute inset-[-10px] rounded-[3rem] bg-indigo-500/10 animate-pulse duration-[2000ms]" />
+
+                <div className="relative w-24 h-24 rounded-[2.5rem] bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 flex items-center justify-center shadow-2xl shadow-indigo-200 ring-4 ring-white/50 overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                  <Icons.Activity className="w-10 h-10 text-white animate-bounce" />
                 </div>
-                {/* 脉冲动画圈 */}
-                <div className="absolute inset-0 rounded-full bg-blue-400/30 animate-ping" />
               </div>
             </div>
 
-            <h2 className="text-xl font-bold text-gray-800 text-center mb-2">AI 正在分析中</h2>
-            <p className="text-gray-500 text-center text-sm mb-6">Gemini 正在分析您的饮食并生成个性化建议...</p>
+            {/* 文字提示 */}
+            <div className="text-center mb-10 space-y-2">
+              <h2 className="text-2xl font-black text-gray-900 tracking-tight">AI 智能分析中</h2>
+              <p className="text-gray-400 text-sm font-medium">Gemini 正在为您的每一餐<br />构建深度营养报告...</p>
+            </div>
 
-            {/* 进度指示器 */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                  <Icons.Check className="w-4 h-4 text-green-600" />
+            {/* 精英进度条 */}
+            <div className="bg-white/50 backdrop-blur-sm rounded-[2rem] p-6 border border-white shadow-xl shadow-gray-200/50 space-y-5 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500 to-indigo-600 opacity-20" />
+
+              <div className="flex items-center gap-4 group">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shadow-sm">
+                  <Icons.Check className="w-5 h-5 text-emerald-500" />
                 </div>
-                <span className="text-sm text-gray-600">读取饮食记录</span>
+                <div className="flex flex-col">
+                  <span className="text-[14px] font-black text-gray-800">读取饮食记录</span>
+                  <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Completed</span>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Icons.Loader className="w-4 h-4 text-blue-600 animate-spin" />
+
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shadow-sm relative">
+                  <Icons.Loader className="w-5 h-5 text-blue-600 animate-spin" />
+                  <div className="absolute inset-0 rounded-xl bg-blue-400/20 animate-ping" />
                 </div>
-                <span className="text-sm text-gray-600">计算营养成分<span className="text-gray-400">...</span></span>
+                <div className="flex flex-col">
+                  <span className="text-[14px] font-black text-blue-600">计算营养成分</span>
+                  <div className="flex gap-1 mt-1">
+                    <div className="w-1 h-1 rounded-full bg-blue-600 animate-bounce delay-100" />
+                    <div className="w-1 h-1 rounded-full bg-blue-600 animate-bounce delay-200" />
+                    <div className="w-1 h-1 rounded-full bg-blue-600 animate-bounce delay-300" />
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                  <Icons.Activity className="w-4 h-4 text-gray-400" />
+
+              <div className="flex items-center gap-4 opacity-40">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                  <Icons.Chef className="w-5 h-5 text-gray-400" />
                 </div>
-                <span className="text-sm text-gray-400">生成减肥建议</span>
+                <div className="flex flex-col">
+                  <span className="text-[14px] font-black text-gray-400">生成个性化建议</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5">Waiting</span>
+                </div>
               </div>
             </div>
           </div>
@@ -637,6 +655,7 @@ const App: React.FC = () => {
 
     return (
       <PullToRefresh
+        className="h-full overflow-y-auto bg-gray-50 no-scrollbar"
         isPullable={!isModalOpen && !isDatePickerOpen}
         onRefresh={async () => {
           if (user) {
@@ -662,7 +681,7 @@ const App: React.FC = () => {
         <div className="flex flex-col bg-gray-50">
           {/* Header */}
           <div
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 z-20 px-5 pb-6 shadow-lg flex items-center justify-between rounded-b-[2rem]"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 z-20 px-5 pb-6 shadow-lg flex items-center justify-between rounded-b-[2rem] sticky top-0"
             style={{ paddingTop: 'max(24px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 24px))' }}
           >
             <div className="flex items-center gap-3">
@@ -743,23 +762,27 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Overall Feedback Section */}
-            <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-[1.5px] rounded-[2.5rem] shadow-xl shadow-indigo-100 overflow-hidden group">
-              <div className="bg-white rounded-[2.4rem] p-6 relative h-full">
-                {/* 装饰性背景 */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16" />
-                <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-blue-50 rounded-full" />
+            {/* Overall Feedback Section - New Bubble Prism Style */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-indigo-500/20 to-purple-500/20 rounded-[2.5rem] blur-xl opacity-50 group-hover:opacity-100 transition-opacity" />
+              <div className="relative bg-white/80 backdrop-blur-xl p-7 rounded-[2.5rem] border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+                {/* 装饰性气泡 */}
+                <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-blue-50/50 rounded-full blur-2xl" />
 
-                <h3 className="font-black text-gray-900 mb-4 flex items-center gap-3 relative z-10 text-lg">
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-indigo-100">
-                    <Icons.User className="w-5 h-5 text-white" />
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-100">
+                    <Icons.Activity className="w-5 h-5 text-white" />
                   </div>
-                  当日健康总结
-                </h3>
-                <div className="relative z-10 space-y-3">
-                  <div className="h-0.5 w-12 bg-indigo-100 rounded-full" />
-                  <p className="text-gray-700 text-[15px] leading-relaxed font-bold">
-                    {analysis.feedback}
+                  <div>
+                    <h3 className="font-black text-gray-900 text-lg leading-none">当日健康总结</h3>
+                    <span className="text-[10px] text-indigo-400 font-black uppercase tracking-widest mt-1 block">Health Insights</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="h-1 w-10 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full" />
+                  <p className="text-gray-700 text-[15px] leading-relaxed font-bold italic">
+                    "{analysis.feedback}"
                   </p>
                 </div>
               </div>
@@ -788,16 +811,17 @@ const App: React.FC = () => {
                   const theme = config[type] || config[MealType.BREAKFAST];
 
                   return (
-                    <div key={type} className="bg-white p-5 rounded-[2.2rem] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100/50 flex gap-5 transition-all active:scale-[0.98] hover:shadow-lg">
+                    <div key={type} className="bg-white p-5 rounded-[2.2rem] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100/50 flex gap-5 transition-all active:scale-[0.98]">
                       <div className={`w-16 h-16 rounded-[1.5rem] bg-gradient-to-br ${theme.bg} shrink-0 flex items-center justify-center shadow-lg shadow-${theme.color}-100 ring-4 ring-white`}>
                         <theme.icon className="w-8 h-8 text-white" />
                       </div>
-                      <div className="flex-1 min-w-0 flex flex-col justify-center">
-                        <div className="flex items-center gap-2 mb-1.5">
+                      <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
+                        <div className="flex items-center gap-2 mb-2">
                           <span className={`text-[13px] font-black uppercase tracking-wider ${theme.text}`}>{theme.label}</span>
                           <div className="h-1 w-1 rounded-full bg-gray-200" />
                         </div>
-                        <p className="text-[14px] text-gray-600 leading-snug font-bold line-clamp-3">
+                        {/* 移除了 line-clamp 限制，确保文字全显示 */}
+                        <p className="text-[14px] text-gray-600 leading-relaxed font-bold whitespace-pre-wrap">
                           {feedback}
                         </p>
                       </div>
@@ -814,10 +838,10 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-gray-50 h-full w-full relative overflow-hidden flex flex-col">
-      {/* Main Content Area (Scrollable) */}
+      {/* Main Content Area (Layout Container) */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto no-scrollbar relative w-full"
+        className="flex-1 overflow-hidden relative w-full"
       >
         {activeTab === 'feed' && (
           <Feed
