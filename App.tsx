@@ -610,6 +610,7 @@ const App: React.FC = () => {
     if (!analysis) {
       return (
         <PullToRefresh
+          className="h-full overflow-y-auto bg-gray-50 no-scrollbar"
           isPullable={!isModalOpen && !isDatePickerOpen}
           onRefresh={async () => {
             if (user) {
@@ -646,11 +647,39 @@ const App: React.FC = () => {
       { name: '脂肪', value: analysis.macros.fat },
     ];
 
+    const hasMealFeedback = analysis.mealFeedback && (
+      analysis.mealFeedback.breakfast ||
+      analysis.mealFeedback.lunch ||
+      analysis.mealFeedback.dinner ||
+      analysis.mealFeedback.snack
+    );
+
+    const getMealFeedback = (type: string) => {
+      // 兼容多种可能的 AI 返回结构
+      const base = analysis?.mealFeedback;
+      if (!base) return '';
+
+      const keyMap: Record<string, string[]> = {
+        [MealType.BREAKFAST]: ['breakfast', '早餐'],
+        [MealType.LUNCH]: ['lunch', '午餐'],
+        [MealType.DINNER]: ['dinner', '晚餐'],
+        [MealType.SNACK]: ['snack', '加餐'],
+      };
+
+      const keys = keyMap[type] || [];
+      for (const key of keys) {
+        const val = base[key];
+        if (typeof val === 'string') return val;
+        if (typeof val === 'object' && val?.feedback) return val.feedback;
+      }
+      return '';
+    };
+
     const mealFeedbackMap = {
-      [MealType.BREAKFAST]: analysis?.mealFeedback?.breakfast || '',
-      [MealType.LUNCH]: analysis?.mealFeedback?.lunch || '',
-      [MealType.DINNER]: analysis?.mealFeedback?.dinner || '',
-      [MealType.SNACK]: analysis?.mealFeedback?.snack || '',
+      [MealType.BREAKFAST]: getMealFeedback(MealType.BREAKFAST),
+      [MealType.LUNCH]: getMealFeedback(MealType.LUNCH),
+      [MealType.DINNER]: getMealFeedback(MealType.DINNER),
+      [MealType.SNACK]: getMealFeedback(MealType.SNACK),
     };
 
     return (
@@ -678,35 +707,42 @@ const App: React.FC = () => {
           </div>
         }
       >
-        <div className="flex flex-col bg-gray-50">
-          {/* Header */}
+        <div className="flex flex-col bg-gray-50 min-h-screen">
+          {/* Header Area with Premium Background */}
           <div
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 z-20 px-5 pb-6 shadow-lg flex items-center justify-between rounded-b-[2rem] sticky top-0"
+            className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 z-20 px-5 pb-8 shadow-xl flex items-center justify-between rounded-b-[2.5rem] sticky top-0 relative overflow-hidden"
             style={{ paddingTop: 'max(24px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 24px))' }}
           >
-            <div className="flex items-center gap-3">
+            {/* Decorative Background Elements */}
+            <div className="absolute top-[-50%] right-[-10%] w-[300px] h-[300px] bg-white/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-[-20%] left-[-10%] w-[200px] h-[200px] bg-purple-500/20 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="flex items-center gap-3 relative z-10">
               <button
                 onClick={() => setActiveTab('tracker')}
-                className="p-1.5 -ml-1 text-white/80 hover:text-white transition-colors"
+                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors backdrop-blur-md active:scale-90"
               >
                 <Icons.ChevronLeft className="w-6 h-6" />
               </button>
               <div className="flex flex-col">
                 <h2 className="text-xl font-bold text-white leading-tight">AI 分析报告</h2>
-                <span className="text-[10px] text-blue-100 font-medium tracking-wide uppercase">{currentDate}</span>
+                <span className="text-[10px] text-blue-100 font-medium tracking-wide uppercase opacity-80">{currentDate}</span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+
+            <div className="flex items-center gap-3 relative z-10">
               <button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing}
-                className="text-xs font-bold text-white bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-full backdrop-blur-sm transition-all flex items-center gap-1.5 active:scale-95"
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white backdrop-blur-md active:scale-90 transition-all"
               >
-                <Icons.History className="w-3.5 h-3.5" />
-                重新生成
+                <Icons.History className="w-4 h-4" />
               </button>
-              <div className="text-sm font-bold text-blue-600 bg-white px-4 py-1.5 rounded-full shadow-sm">
-                {analysis.macros.calories} <span className="text-[10px] opacity-60">kcal</span>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] text-blue-100 uppercase font-bold tracking-wider mb-0.5">Total Intake</span>
+                <div className="text-lg font-black text-white bg-white/10 px-3 py-0.5 rounded-lg backdrop-blur-md shadow-sm border border-white/10">
+                  {analysis.macros.calories} <span className="text-[10px] font-normal opacity-80">kcal</span>
+                </div>
               </div>
             </div>
           </div>
@@ -788,48 +824,51 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Per Meal Analysis */}
-            <div className="space-y-5">
-              <div className="flex items-center justify-between px-2 mb-2">
-                <div className="flex flex-col">
-                  <h3 className="font-black text-gray-900 text-xl tracking-tight">分餐营养点评</h3>
-                  <div className="h-1 w-8 bg-blue-500 rounded-full mt-1" />
+            {/* Per Meal Analysis - Only render if data exists */}
+            {hasMealFeedback && (
+              <div className="space-y-5">
+                <div className="flex items-center justify-between px-2 mb-2">
+                  <div className="flex flex-col">
+                    <h3 className="font-black text-gray-900 text-xl tracking-tight">分餐营养点评</h3>
+                    <div className="h-1 w-8 bg-blue-500 rounded-full mt-1" />
+                  </div>
+                  <span className="text-[10px] text-gray-300 font-black tracking-[0.2em] uppercase">Detailed Review</span>
                 </div>
-                <span className="text-[10px] text-gray-300 font-black tracking-[0.2em] uppercase">Detailed Review</span>
-              </div>
 
-              <div className="grid gap-4">
-                {Object.entries(mealFeedbackMap).map(([type, feedback]) => {
-                  if (!feedback) return null;
+                <div className="grid gap-4">
+                  {Object.entries(mealFeedbackMap).map(([type, feedback]) => {
+                    if (!feedback) return null;
 
-                  const config: any = {
-                    [MealType.BREAKFAST]: { icon: Icons.Breakfast, color: 'orange', label: '精致早餐', bg: 'from-orange-400 to-amber-500', text: 'text-orange-600' },
-                    [MealType.LUNCH]: { icon: Icons.Lunch, color: 'green', label: '能量午餐', bg: 'from-emerald-400 to-teal-500', text: 'text-emerald-600' },
-                    [MealType.DINNER]: { icon: Icons.Dinner, color: 'indigo', label: '轻盈晚餐', bg: 'from-indigo-400 to-blue-500', text: 'text-indigo-600' },
-                    [MealType.SNACK]: { icon: Icons.Snack, color: 'purple', label: '健康加餐', bg: 'from-purple-400 to-fuchsia-500', text: 'text-purple-600' },
-                  };
-                  const theme = config[type] || config[MealType.BREAKFAST];
+                    const config: any = {
+                      [MealType.BREAKFAST]: { icon: Icons.Breakfast, color: 'orange', label: '精致早餐', bg: 'from-orange-400 to-amber-500', text: 'text-orange-600' },
+                      [MealType.LUNCH]: { icon: Icons.Lunch, color: 'green', label: '能量午餐', bg: 'from-emerald-400 to-teal-500', text: 'text-emerald-600' },
+                      [MealType.DINNER]: { icon: Icons.Dinner, color: 'indigo', label: '轻盈晚餐', bg: 'from-indigo-400 to-blue-500', text: 'text-indigo-600' },
+                      [MealType.SNACK]: { icon: Icons.Snack, color: 'purple', label: '健康加餐', bg: 'from-purple-400 to-fuchsia-500', text: 'text-purple-600' },
+                    };
+                    const theme = config[type] || config[MealType.BREAKFAST];
 
-                  return (
-                    <div key={type} className="bg-white p-5 rounded-[2.2rem] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100/50 flex gap-5 transition-all active:scale-[0.98]">
-                      <div className={`w-16 h-16 rounded-[1.5rem] bg-gradient-to-br ${theme.bg} shrink-0 flex items-center justify-center shadow-lg shadow-${theme.color}-100 ring-4 ring-white`}>
-                        <theme.icon className="w-8 h-8 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className={`text-[13px] font-black uppercase tracking-wider ${theme.text}`}>{theme.label}</span>
-                          <div className="h-1 w-1 rounded-full bg-gray-200" />
+                    return (
+                      <div key={type} className="bg-white p-5 rounded-[2.2rem] shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100/50 flex gap-5 transition-all active:scale-[0.98]">
+                        <div className={`w-16 h-16 rounded-[1.5rem] bg-gradient-to-br ${theme.bg} shrink-0 flex items-center justify-center shadow-lg shadow-${theme.color}-100 ring-4 ring-white`}>
+                          <theme.icon className="w-8 h-8 text-white" />
                         </div>
-                        {/* 移除了 line-clamp 限制，确保文字全显示 */}
-                        <p className="text-[14px] text-gray-600 leading-relaxed font-bold whitespace-pre-wrap">
-                          {feedback}
-                        </p>
+                        <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`text-[13px] font-black uppercase tracking-wider ${theme.text}`}>{theme.label}</span>
+                            <div className="h-1 w-1 rounded-full bg-gray-200" />
+                          </div>
+                          <p className="text-[14px] text-gray-600 leading-relaxed font-bold whitespace-pre-wrap">
+                            {feedback}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
+
+
           </div>
         </div>
       </PullToRefresh>
@@ -911,11 +950,7 @@ const App: React.FC = () => {
                 {tab.label}
               </span>
 
-              {/* Minimal Line Indicator */}
-              <div
-                className={`absolute bottom-2 w-1.5 h-1.5 rounded-full bg-blue-600 transition-all duration-300 ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-0'
-                  }`}
-              />
+
             </button>
           );
         })}

@@ -33,7 +33,8 @@ export default async function handler(req: any, res: any) {
                 (a.macros->>'calories')::int as calories,
                 0 as likes,
                 '[]'::json as images,
-                a.plan as "aiAnalysis"
+                a.plan as "aiAnalysis",
+                a.meal_feedback as "mealFeedback"
             FROM qingshu_analysis a
             JOIN qingshu_users u ON a.user_id = u.id
             ORDER BY a.updated_at DESC

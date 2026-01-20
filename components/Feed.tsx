@@ -253,7 +253,7 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
             <span>刷新中...</span>
           </div>
         }
-        className="flex-1 overflow-y-auto w-full"
+        className="h-full overflow-y-auto w-full no-scrollbar"
       >
         <div className="min-h-full">
           {/* Content */}
