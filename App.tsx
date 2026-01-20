@@ -612,7 +612,7 @@ const App: React.FC = () => {
     if (!analysis) {
       return (
         <PullToRefresh
-          className="h-full overflow-y-auto bg-gray-50 no-scrollbar"
+          className="h-full overflow-y-auto bg-gray-50 no-scrollbar smooth-scroll"
           isPullable={!isModalOpen && !isDatePickerOpen}
           onRefresh={async () => {
             if (user) {
@@ -686,7 +686,7 @@ const App: React.FC = () => {
 
     return (
       <PullToRefresh
-        className="h-full overflow-y-auto bg-gray-50 no-scrollbar"
+        className="h-full overflow-y-auto bg-gray-50 no-scrollbar smooth-scroll"
         isPullable={!isModalOpen && !isDatePickerOpen}
         onRefresh={async () => {
           if (user) {
@@ -712,38 +712,38 @@ const App: React.FC = () => {
         <div className="flex flex-col bg-gray-50 min-h-screen">
           {/* Header Area with Premium Background */}
           <div
-            className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 z-20 px-5 pb-8 shadow-xl flex items-center justify-between rounded-b-[2.5rem] sticky top-0 relative overflow-hidden"
-            style={{ paddingTop: 'max(24px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 24px))' }}
+            className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 z-20 px-4 pb-6 shadow-xl flex items-center justify-between rounded-b-[2.5rem] sticky top-0 relative overflow-hidden"
+            style={{ paddingTop: 'max(20px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 20px))' }}
           >
             {/* Decorative Background Elements */}
             <div className="absolute top-[-50%] right-[-10%] w-[300px] h-[300px] bg-white/5 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-[-20%] left-[-10%] w-[200px] h-[200px] bg-purple-500/20 rounded-full blur-2xl pointer-events-none" />
 
-            <div className="flex items-center gap-3 relative z-10">
+            <div className="flex items-center gap-2 relative z-10 shrink-0">
               <button
                 onClick={() => setActiveTab('tracker')}
-                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors backdrop-blur-md active:scale-90"
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors backdrop-blur-md active:scale-90 shrink-0"
               >
-                <Icons.ChevronLeft className="w-6 h-6" />
+                <Icons.ChevronLeft className="w-5 h-5" />
               </button>
               <div className="flex flex-col">
-                <h2 className="text-xl font-bold text-white leading-tight">AI 分析报告</h2>
+                <h2 className="text-lg font-bold text-white leading-tight whitespace-nowrap">AI 分析报告</h2>
                 <span className="text-[10px] text-blue-100 font-medium tracking-wide uppercase opacity-80">{currentDate}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 relative z-10">
+            <div className="flex items-center gap-1.5 relative z-10">
               <button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing}
-                className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full text-white transition-all active:scale-95 border border-white/10"
+                className="flex items-center gap-1 bg-white/10 hover:bg-white/20 backdrop-blur-md px-2.5 py-1.5 rounded-full text-white transition-all active:scale-95 border border-white/10"
               >
-                <Icons.History className="w-3.5 h-3.5" />
-                <span className="text-xs font-bold">重新生成</span>
+                <Icons.History className="w-3 h-3" />
+                <span className="text-[11px] font-bold whitespace-nowrap">重新生成</span>
               </button>
 
-              <div className="flex flex-col items-end">
-                <div className="text-lg font-black text-white bg-white/10 px-3 py-0.5 rounded-lg backdrop-blur-md shadow-sm border border-white/10">
+              <div className="flex flex-col items-end shrink-0">
+                <div className="text-base font-black text-white bg-white/10 px-2.5 py-0.5 rounded-lg backdrop-blur-md shadow-sm border border-white/10 whitespace-nowrap">
                   {analysis.macros.calories} <span className="text-[10px] font-normal opacity-80">kcal</span>
                 </div>
               </div>
