@@ -64,6 +64,7 @@ const App: React.FC = () => {
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isCompressing, setIsCompressing] = useState(false);
   const [isSavingMeal, setIsSavingMeal] = useState(false);
+  const [editingItem, setEditingItem] = useState<FoodItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Viewer State (Global for tracker)
@@ -240,6 +241,15 @@ const App: React.FC = () => {
     setCurrentMealType(type);
     setBatchInput('');
     setSelectedImages([]);
+    setEditingItem(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditItem = (type: MealType, item: FoodItem) => {
+    setCurrentMealType(type);
+    setBatchInput(item.name);
+    setSelectedImages(item.images || []);
+    setEditingItem(item);
     setIsModalOpen(true);
   };
 
@@ -302,15 +312,31 @@ const App: React.FC = () => {
       }
     }
 
-    // Logic: Create items from text. Attach ALL images to the first generated item.
-    const newItems: FoodItem[] = lines.map((line, index) => ({
-      id: generateId(),
-      name: line,
-      description: '',
-      images: index === 0 ? uploadedImageUrls : undefined // Attach images to the first item
-    }));
+    // Logic: Create items from text.
+    let updatedMeals: FoodItem[];
 
-    const updatedMeals = [...dayLog[currentMealType], ...newItems];
+    if (editingItem) {
+      // 编辑模式：只处理第一行（编辑不支持批量改名）并更新图片
+      updatedMeals = dayLog[currentMealType].map(item => {
+        if (item.id === editingItem.id) {
+          return {
+            ...item,
+            name: lines[0],
+            images: uploadedImageUrls.length > 0 ? uploadedImageUrls : undefined
+          };
+        }
+        return item;
+      });
+    } else {
+      // 新增模式：Attach ALL images to the first generated item.
+      const newItems: FoodItem[] = lines.map((line, index) => ({
+        id: generateId(),
+        name: line,
+        description: '',
+        images: index === 0 ? uploadedImageUrls : undefined
+      }));
+      updatedMeals = [...dayLog[currentMealType], ...newItems];
+    }
 
     // 同步到云端
     if (user) {
@@ -322,7 +348,8 @@ const App: React.FC = () => {
         };
         setDayLog(updatedLog);
         setIsModalOpen(false);
-        showToast("记录已保存", 'success');
+        setEditingItem(null);
+        showToast(editingItem ? "已更新" : "记录已保存", 'success');
       } catch (err: any) {
         showToast(`保存失败: ${err.message}`);
       } finally {
@@ -516,6 +543,7 @@ const App: React.FC = () => {
                     items={dayLog[type]}
                     onAdd={() => openAddModal(type)}
                     onRemove={(ids) => handleRemoveFoods(type, ids)}
+                    onEdit={(item) => handleEditItem(type, item)}
                     onViewImage={(images) => setViewerImages(images)}
                   />
                 </div>
@@ -986,8 +1014,8 @@ const App: React.FC = () => {
             className={`bg-white w-full max-w-md rounded-t-[2rem] p-6 animate-in slide-in-from-bottom duration-300 max-h-[90vh] flex flex-col transition-transform`}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800">记录{currentMealType}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <h3 className="text-xl font-bold text-gray-800">{editingItem ? '修改' : '记录'}{currentMealType}</h3>
+              <button onClick={() => { setIsModalOpen(false); setEditingItem(null); }} className="text-gray-400 hover:text-gray-600">
                 <Icons.Close className="w-6 h-6" />
               </button>
             </div>
@@ -1017,7 +1045,7 @@ const App: React.FC = () => {
                   autoFocus
                   value={batchInput}
                   onChange={(e) => setBatchInput(e.target.value)}
-                  placeholder={'例如：\n一碗牛肉面\n一个荷包蛋'}
+                  placeholder={editingItem ? '请输入名称' : '例如：\n一碗牛肉面\n一个荷包蛋'}
                   className="w-full h-32 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-all resize-none"
                 />
               </div>
@@ -1079,7 +1107,7 @@ const App: React.FC = () => {
               ) : isCompressing ? (
                 '处理图片中...'
               ) : (
-                '确认添加'
+                editingItem ? '保存修改' : '确认添加'
               )}
             </button>
           </div>

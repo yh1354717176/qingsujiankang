@@ -7,6 +7,7 @@ interface MealCardProps {
   items: FoodItem[];
   onAdd: () => void;
   onRemove: (ids: string[]) => void;
+  onEdit?: (item: FoodItem) => void;
   onViewImage?: (images: string[]) => void;
 }
 
@@ -20,7 +21,7 @@ const MealIcon = ({ type }: { type: MealType }) => {
   }
 };
 
-export const MealCard: React.FC<MealCardProps> = ({ type, items, onAdd, onRemove, onViewImage }) => {
+export const MealCard: React.FC<MealCardProps> = ({ type, items, onAdd, onRemove, onEdit, onViewImage }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -54,42 +55,42 @@ export const MealCard: React.FC<MealCardProps> = ({ type, items, onAdd, onRemove
           </div>
           <h3 className="font-bold text-gray-800 text-lg">{type}</h3>
         </div>
-        
+
         <div className="flex gap-2">
-           {items.length > 0 && (
-             isEditing ? (
-               <button 
-                  onClick={handleDeleteSelected}
-                  disabled={selectedIds.size === 0}
-                  className="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-full font-medium disabled:opacity-50"
-               >
-                 删除 ({selectedIds.size})
-               </button>
-             ) : (
-                <button 
-                  onClick={handleToggleEdit}
-                  className="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full font-medium"
-               >
-                 管理
-               </button>
-             )
-           )}
-           
-           {isEditing ? (
-             <button 
+          {items.length > 0 && (
+            isEditing ? (
+              <button
+                onClick={handleDeleteSelected}
+                disabled={selectedIds.size === 0}
+                className="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-full font-medium disabled:opacity-50"
+              >
+                删除 ({selectedIds.size})
+              </button>
+            ) : (
+              <button
                 onClick={handleToggleEdit}
-                className="text-blue-600 p-2 hover:bg-blue-50 rounded-full transition-colors"
-             >
-               <span className="text-xs font-bold">完成</span>
-             </button>
-           ) : (
-             <button 
-                onClick={onAdd}
-                className="text-blue-600 p-2 hover:bg-blue-50 rounded-full transition-colors"
-             >
-               <Icons.Plus className="w-5 h-5" />
-             </button>
-           )}
+                className="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full font-medium"
+              >
+                管理
+              </button>
+            )
+          )}
+
+          {isEditing ? (
+            <button
+              onClick={handleToggleEdit}
+              className="text-blue-600 p-2 hover:bg-blue-50 rounded-full transition-colors"
+            >
+              <span className="text-xs font-bold">完成</span>
+            </button>
+          ) : (
+            <button
+              onClick={onAdd}
+              className="text-blue-600 p-2 hover:bg-blue-50 rounded-full transition-colors"
+            >
+              <Icons.Plus className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -100,28 +101,34 @@ export const MealCard: React.FC<MealCardProps> = ({ type, items, onAdd, onRemove
       ) : (
         <ul className="space-y-2">
           {items.map((item) => (
-            <li 
-              key={item.id} 
-              onClick={() => isEditing && toggleSelection(item.id)}
-              className={`flex justify-between items-center p-2 rounded-lg transition-all ${isEditing ? 'cursor-pointer hover:bg-gray-100' : 'bg-gray-50'}`}
+            <li
+              key={item.id}
+              onClick={() => {
+                if (isEditing) {
+                  toggleSelection(item.id);
+                } else if (onEdit) {
+                  onEdit(item);
+                }
+              }}
+              className={`flex justify-between items-center p-2 rounded-lg transition-all ${isEditing ? 'cursor-pointer hover:bg-gray-100' : 'bg-gray-50 active:scale-[0.98]'}`}
             >
               <div className="flex items-center gap-3 w-full">
                 {isEditing && (
                   <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${selectedIds.has(item.id) ? 'bg-blue-500 border-blue-500' : 'border-gray-300 bg-white'}`}>
-                     {selectedIds.has(item.id) && <div className="w-2 h-2 bg-white rounded-full" />}
+                    {selectedIds.has(item.id) && <div className="w-2 h-2 bg-white rounded-full" />}
                   </div>
                 )}
-                
+
                 {item.images && item.images.length > 0 && (
-                   <div 
-                      className="w-10 h-10 rounded-lg overflow-hidden shrink-0 cursor-zoom-in border border-gray-100"
-                      onClick={(e) => {
-                          e.stopPropagation();
-                          if (!isEditing && onViewImage && item.images) onViewImage(item.images);
-                      }}
-                   >
-                       <img src={item.images[0]} className="w-full h-full object-cover" />
-                   </div>
+                  <div
+                    className="w-10 h-10 rounded-lg overflow-hidden shrink-0 cursor-zoom-in border border-gray-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isEditing && onViewImage && item.images) onViewImage(item.images);
+                    }}
+                  >
+                    <img src={item.images[0]} className="w-full h-full object-cover" />
+                  </div>
                 )}
 
                 <div className="flex-1 min-w-0">
@@ -132,10 +139,10 @@ export const MealCard: React.FC<MealCardProps> = ({ type, items, onAdd, onRemove
                 </div>
 
                 {item.images && item.images.length > 1 && !isEditing && (
-                    <div className="text-xs text-gray-400 flex items-center gap-0.5 shrink-0">
-                        <Icons.Camera className="w-3 h-3" />
-                        {item.images.length}
-                    </div>
+                  <div className="text-xs text-gray-400 flex items-center gap-0.5 shrink-0">
+                    <Icons.Camera className="w-3 h-3" />
+                    {item.images.length}
+                  </div>
                 )}
               </div>
             </li>
