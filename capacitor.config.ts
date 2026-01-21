@@ -12,9 +12,9 @@ const config: CapacitorConfig = {
   plugins: {
     SplashScreen: {
       // 启动屏设置
-      launchShowDuration: 0, // 不使用原生启动屏，使用 Web 加载器
-      launchAutoHide: true,
-      launchFadeOutDuration: 300,
+      launchShowDuration: 3000, // 增加时长，防止 Web 加载前出现黑屏
+      launchAutoHide: false, // 改为手动控制隐藏，确保 Web 渲染后才切掉
+      launchFadeOutDuration: 500,
       backgroundColor: '#2563EB', // 与品牌色一致
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',

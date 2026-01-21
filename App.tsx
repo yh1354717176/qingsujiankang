@@ -14,6 +14,7 @@ import { analyzeMeals, syncUser, syncMeal, fetchDayData, fetchUser, fetchHistory
 import { compressImage, uploadToImgBB } from './utils/imageHelper';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
+import { SplashScreen } from '@capacitor/splash-screen';
 import PullToRefresh from 'react-simple-pull-to-refresh';
 import { PullToRefresh as CustomPullToRefresh } from './components/PullToRefresh';
 import { getBeijingDate } from './utils/dateHelper';
@@ -37,6 +38,11 @@ const App: React.FC = () => {
       setUser(JSON.parse(stored));
     }
     setIsInitialLoading(false);
+
+    // 隐藏原生启动屏
+    SplashScreen.hide().catch(() => {
+      console.log('SplashScreen hide failed or not available');
+    });
   }, []);
 
   // --- State ---
