@@ -77,6 +77,8 @@ const App: React.FC = () => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [historyDates, setHistoryDates] = useState<Set<string>>(new Set());
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('正在加载...');
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -143,7 +145,8 @@ const App: React.FC = () => {
           }).catch(e => console.error("Update profile failed", e));
 
           // 2. 从云端拉取全天数据
-          setIsAnalyzing(true);
+          setIsGlobalLoading(true);
+          setLoadingMessage('同步数据中...');
           const cloudData = await fetchDayData(user.phoneNumber, currentDate);
 
           if (cloudData.segments) {
@@ -187,6 +190,7 @@ const App: React.FC = () => {
           });
           setAnalysis(null);
         } finally {
+          setIsGlobalLoading(false);
           setIsAnalyzing(false);
         }
       }
@@ -230,6 +234,8 @@ const App: React.FC = () => {
     }
 
     try {
+      setIsGlobalLoading(true);
+      setLoadingMessage('正在登录...');
       // 2. 尝试从云端拉取用户信息 (登录逻辑)
       let finalProfile = profile;
       try {
@@ -261,17 +267,23 @@ const App: React.FC = () => {
       showToast(finalProfile === profile ? "注册成功" : "欢迎回来！", 'success');
     } catch (err: any) {
       showToast(`登录/同步失败: ${err.message}`);
+    } finally {
+      setIsGlobalLoading(false);
     }
   };
 
   const handleUpdateUser = async (updatedProfile: UserProfile) => {
     try {
+      setIsGlobalLoading(true);
+      setLoadingMessage('正在同步个人资料...');
       await syncUser(updatedProfile);
       setUser(updatedProfile);
       localStorage.setItem('currentUserProfile', JSON.stringify(updatedProfile));
       showToast("资料已同步", 'success');
     } catch (err: any) {
       showToast(`同步失败: ${err.message}`);
+    } finally {
+      setIsGlobalLoading(false);
     }
   };
 
@@ -331,6 +343,8 @@ const App: React.FC = () => {
     }
 
     setIsSavingMeal(true);
+    setIsGlobalLoading(true);
+    setLoadingMessage('上传图片并同步中...');
 
     const lines = batchInput.split('\n').map(l => l.trim()).filter(l => l);
 
@@ -386,6 +400,7 @@ const App: React.FC = () => {
 
     // 同步到云端
     if (user) {
+      setLoadingMessage('正在保存记录...');
       try {
         await syncMeal(user.phoneNumber, currentDate, currentMealType, updatedMeals);
         const updatedLog = {
@@ -401,10 +416,12 @@ const App: React.FC = () => {
         showToast(`保存失败: ${err.message}`);
       } finally {
         setIsSavingMeal(false);
+        setIsGlobalLoading(false);
       }
     } else {
       showToast("请先登录以保存记录。");
       setIsSavingMeal(false);
+      setIsGlobalLoading(false);
     }
   };
 
@@ -423,6 +440,8 @@ const App: React.FC = () => {
 
     // 同步到云端
     if (user) {
+      setIsGlobalLoading(true);
+      setLoadingMessage('正在同步删除...');
       try {
         await syncMeal(user.phoneNumber, currentDate, type, updatedMeals);
         const updatedLog = {
@@ -434,15 +453,20 @@ const App: React.FC = () => {
         showToast("已删除", 'success');
       } catch (err: any) {
         showToast(`删除失败: ${err.message}`);
+      } finally {
+        setIsGlobalLoading(false);
       }
     } else {
       showToast("请先登录以删除记录。");
+      setIsGlobalLoading(false);
     }
   };
 
   const handleAnalyze = async () => {
     setActiveTab('analysis');
     setIsAnalyzing(true);
+    setIsGlobalLoading(true);
+    setLoadingMessage('AI 正在深度分析中...');
     setError(null);
     setAnalysis(null);
 
@@ -462,6 +486,7 @@ const App: React.FC = () => {
       showToast("分析失败，请稍后重试。");
     } finally {
       setIsAnalyzing(false);
+      setIsGlobalLoading(false);
     }
   };
 
@@ -512,56 +537,45 @@ const App: React.FC = () => {
       >
         <div className="flex flex-col bg-gray-50">
           {/* Fixed Header - 延伸到状态栏区域 */}
+          {/* Fixed Header - 保持在顶部且高度优化 */}
           <div
-            className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white z-10 px-6 pb-8 rounded-b-[2.5rem] shadow-xl overflow-hidden relative"
-            style={{ paddingTop: 'max(24px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 24px))' }}
+            className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white z-[40] px-5 pb-5 rounded-b-[2rem] shadow-lg overflow-hidden relative sticky top-0"
+            style={{ paddingTop: 'max(16px, calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 16px))' }}
           >
-            {/* 装饰性背景元素 */}
-            <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/5" />
-            <div className="absolute -bottom-20 -left-12 w-40 h-40 rounded-full bg-white/5" />
+            {/* 装饰性背景元素 - 缩小尺寸 */}
+            <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-white/5" />
+            <div className="absolute -bottom-16 -left-8 w-24 h-24 rounded-full bg-white/5" />
 
-            <div className="relative z-10 flex justify-between items-start">
-              <div>
-                <p className="text-blue-200 text-sm mb-1">👋 你好</p>
-                <h1 className="text-2xl font-bold">{user.name}</h1>
-                <p className="text-blue-100/80 text-sm mt-1">
-                  {currentDate === new Date().toISOString().split('T')[0]
-                    ? '今天想吃点什么？'
-                    : `${currentDate} 的记录`
-                  }
-                </p>
+            <div className="relative z-10 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div
+                  onClick={() => setActiveTab('profile')}
+                  className="w-10 h-10 rounded-full bg-white/20 border-2 border-white/30 overflow-hidden cursor-pointer flex items-center justify-center shadow-lg active:scale-95 transition-all"
+                >
+                  {user.avatar ? (
+                    <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <Icons.User className="w-5 h-5 text-white" />
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold leading-none">{user.name}</h1>
+                  <p className="text-blue-100/70 text-[10px] mt-1 font-medium">
+                    {currentDate === new Date().toISOString().split('T')[0] ? '健康饮食每一天' : `${currentDate}`}
+                  </p>
+                </div>
               </div>
-              <div
-                onClick={() => setActiveTab('profile')}
-                className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/30 overflow-hidden cursor-pointer flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
-              >
-                {user.avatar ? (
-                  <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <Icons.User className="w-6 h-6 text-white" />
-                )}
-              </div>
-            </div>
 
-            {/* 统计卡片 */}
-            <div className="relative z-10 mt-5 grid grid-cols-2 gap-3">
-              <div className="bg-white/15 rounded-2xl p-3 border border-white/10">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
-                    <Icons.Utensils className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-white/70 text-xs">已记录</span>
+              {/* 统计横向排列 - 占用更少高度 */}
+              <div className="flex gap-2">
+                <div className="bg-white/10 backdrop-blur-md rounded-xl px-2.5 py-1.5 border border-white/10 flex flex-col items-center min-w-[60px]">
+                  <span className="text-[9px] text-blue-100 opacity-80 leading-none mb-1">已记录</span>
+                  <div className="text-white font-black text-sm leading-none">{totalItems} <span className="text-[8px] font-normal opacity-60">项</span></div>
                 </div>
-                <div className="text-white font-bold text-xl">{totalItems} <span className="text-sm font-normal text-white/60">项</span></div>
-              </div>
-              <div className="bg-white/15 rounded-2xl p-3 border border-white/10">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
-                    <Icons.Activity className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-white/70 text-xs">估算热量</span>
+                <div className="bg-white/10 backdrop-blur-md rounded-xl px-2.5 py-1.5 border border-white/10 flex flex-col items-center min-w-[70px]">
+                  <span className="text-[9px] text-blue-100 opacity-80 leading-none mb-1">今日热量</span>
+                  <div className="text-white font-black text-sm leading-none">{todayCalories} <span className="text-[8px] font-normal opacity-60">kcal</span></div>
                 </div>
-                <div className="text-white font-bold text-xl">{todayCalories} <span className="text-sm font-normal text-white/60">kcal</span></div>
               </div>
             </div>
           </div>
@@ -1177,7 +1191,29 @@ const App: React.FC = () => {
         onClose={() => setIsDatePickerOpen(false)}
         selectedDate={currentDate}
         onSelect={setCurrentDate}
+        historyDates={historyDates}
       />
+
+      {/* Global Page Loading Overlay */}
+      {isGlobalLoading && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="flex flex-col items-center gap-4 px-10 py-8 bg-white/90 rounded-[2.5rem] shadow-2xl border border-white/20">
+            <div className="relative w-16 h-16">
+              {/* Outer Glow */}
+              <div className="absolute inset-0 rounded-full bg-blue-400/20 blur-xl animate-pulse"></div>
+              {/* Spinning Ring */}
+              <div className="absolute inset-0 border-4 border-blue-50 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              {/* Center Dot */}
+              <div className="absolute inset-[35%] bg-indigo-500 rounded-lg animate-bounce shadow-lg shadow-indigo-200"></div>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-base font-black text-gray-800 tracking-tight">{loadingMessage}</span>
+              <span className="text-[10px] text-gray-400 font-bold tracking-widest uppercase opacity-60">Please Wait</span>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

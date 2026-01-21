@@ -7,6 +7,7 @@ interface DatePickerProps {
     onClose: () => void;
     selectedDate: string; // YYYY-MM-DD
     onSelect: (date: string) => void;
+    historyDates?: Set<string>;
 }
 
 // 农历数据 (仅基础日期，用于真机显示测试)
@@ -44,7 +45,7 @@ const generateCalendarForMonth = (year: number, month: number) => {
     return days;
 };
 
-export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selectedDate, onSelect }) => {
+export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selectedDate, onSelect, historyDates }) => {
     const parseSafeDate = (dateStr: string) => parseDate(dateStr);
 
     // ⚠️ 所有 Hooks 必须在 early return 之前调用
@@ -129,6 +130,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
     const renderDayCell = (d: any, i: number) => {
         const isSelected = d.dateStr === selectedDate;
         const isToday = d.dateStr === todayStr;
+        const hasHistory = historyDates?.has(d.dateStr);
 
         return (
             <div
@@ -154,12 +156,22 @@ export const DatePicker: React.FC<DatePickerProps> = ({ isOpen, onClose, selecte
                     <span style={{
                         fontSize: '9px',
                         position: 'absolute',
-                        bottom: '2px',
+                        bottom: '4px',
                         color: isSelected ? '#bfdbfe' : '#ef4444',
                         whiteSpace: 'nowrap'
                     }}>
                         {d.holiday}
                     </span>
+                )}
+                {hasHistory && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '2px',
+                        width: '3px',
+                        height: '3px',
+                        borderRadius: '50%',
+                        backgroundColor: isSelected ? '#ffffff' : '#2563eb'
+                    }} />
                 )}
             </div>
         );

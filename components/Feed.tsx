@@ -282,9 +282,16 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
             {/* Posts */}
             <div className="space-y-4 pt-2">
               {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                  <Icons.Loader className="w-10 h-10 animate-spin mb-4" />
-                  <p>加载社区动态中...</p>
+                <div className="flex flex-col items-center justify-center py-24 gap-4">
+                  <div className="relative w-14 h-14">
+                    <div className="absolute inset-0 rounded-full border-4 border-blue-50"></div>
+                    <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+                    <div className="absolute inset-0 rounded-full bg-blue-600/5 animate-pulse"></div>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-black text-gray-800 tracking-tight">发现精彩分享</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-widest opacity-60">Loading Community</p>
+                  </div>
                 </div>
               ) : posts.length === 0 ? (
                 <div className="text-center py-20 text-gray-400">
