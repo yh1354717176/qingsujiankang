@@ -8,39 +8,21 @@ interface CalendarStripProps {
   userPhoneNumber?: string; // 用于检查数据
   isPickerOpen: boolean;
   setIsPickerOpen: (open: boolean) => void;
+  historyDates?: Set<string>;
 }
 
 /**
  * @description 日历条组件 - 显示最近7天的日期选择器并支持左右滑动切换周
  */
-export const CalendarStrip: React.FC<CalendarStripProps> = ({ selectedDate, onSelectDate, userPhoneNumber, isPickerOpen, setIsPickerOpen }) => {
-  const [datesWithData, setDatesWithData] = useState<Set<string>>(new Set());
-
-  // 检查哪些日期有数据
-  useEffect(() => {
-    const dates = new Set<string>();
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('nutriplan_analysis_')) {
-        const date = key.split('_').pop();
-        if (date) dates.add(date);
-      }
-      if (key && key.startsWith('nutriplan_log_')) {
-        const parts = key.split('_');
-        const date = parts[parts.length - 1];
-        if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-          try {
-            const data = JSON.parse(localStorage.getItem(key) || '{}');
-            const hasRecords = Object.values(data).some((arr: any) => Array.isArray(arr) && arr.length > 0);
-            if (hasRecords) dates.add(date);
-          } catch (e) {
-            // ignore
-          }
-        }
-      }
-    }
-    setDatesWithData(dates);
-  }, [userPhoneNumber, selectedDate]);
+export const CalendarStrip: React.FC<CalendarStripProps> = ({
+  selectedDate,
+  onSelectDate,
+  userPhoneNumber,
+  isPickerOpen,
+  setIsPickerOpen,
+  historyDates
+}) => {
+  const datesWithData = historyDates || new Set<string>();
 
   const today = getBeijingDate();
 
@@ -138,7 +120,7 @@ export const CalendarStrip: React.FC<CalendarStripProps> = ({ selectedDate, onSe
                 <span className="text-sm font-bold">{isToday && !isSelected ? '今' : date.getDate()}</span>
               </div>
               {hasData && (
-                <div className={`absolute bottom-0 w-1 h-1 rounded-full ${isSelected ? 'bg-blue-600' : 'bg-green-500'}`} />
+                <div className={`absolute bottom-0 w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-blue-600 animate-pulse'}`} />
               )}
             </button>
           );

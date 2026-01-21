@@ -10,7 +10,7 @@ import { CalendarStrip } from './components/CalendarStrip';
 import { DatePicker } from './components/DatePicker';
 import { ImageViewer } from './components/ImageViewer';
 import { MealType, FoodItem, DayLog, Tab, AnalysisResult, UserProfile } from './types';
-import { analyzeMeals, syncUser, syncMeal, fetchDayData, fetchUser } from './services/geminiService';
+import { analyzeMeals, syncUser, syncMeal, fetchDayData, fetchUser, fetchHistory } from './services/geminiService';
 import { compressImage, uploadToImgBB } from './utils/imageHelper';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -76,6 +76,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [historyDates, setHistoryDates] = useState<Set<string>>(new Set());
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -200,6 +201,23 @@ const App: React.FC = () => {
       localStorage.setItem(`nutriplan_history_${user.phoneNumber}`, JSON.stringify(foodHistory));
     }
   }, [foodHistory, user]);
+
+  const loadHistoryDates = async () => {
+    if (!user) return;
+    try {
+      const history = await fetchHistory(user.phoneNumber);
+      if (Array.isArray(history)) {
+        const dates = new Set(history.map((item: any) => item.date));
+        setHistoryDates(dates);
+      }
+    } catch (err) {
+      console.error("Failed to load history dates", err);
+    }
+  };
+
+  useEffect(() => {
+    loadHistoryDates();
+  }, [user?.phoneNumber]);
 
 
   // --- Handlers ---
@@ -347,6 +365,7 @@ const App: React.FC = () => {
           [currentMealType]: updatedMeals
         };
         setDayLog(updatedLog);
+        loadHistoryDates(); // 更新记录点
         setIsModalOpen(false);
         setEditingItem(null);
         showToast(editingItem ? "已更新" : "记录已保存", 'success');
@@ -383,6 +402,7 @@ const App: React.FC = () => {
           [type]: updatedMeals
         };
         setDayLog(updatedLog);
+        loadHistoryDates(); // 更新记录点
         showToast("已删除", 'success');
       } catch (err: any) {
         showToast(`删除失败: ${err.message}`);
@@ -525,6 +545,7 @@ const App: React.FC = () => {
               onSelectDate={setCurrentDate}
               isPickerOpen={isDatePickerOpen}
               setIsPickerOpen={setIsDatePickerOpen}
+              historyDates={historyDates}
             />
 
             {/* 细分隔线 */}
