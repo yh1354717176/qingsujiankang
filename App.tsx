@@ -223,14 +223,42 @@ const App: React.FC = () => {
   // --- Handlers ---
 
   const handleLogin = async (profile: UserProfile) => {
+    // 1. 简单的手机号校验
+    if (!/^\d{11}$/.test(profile.phoneNumber)) {
+      showToast("请输入正确的 11 位手机号码");
+      return;
+    }
+
     try {
-      await syncUser(profile);
-      localStorage.setItem('currentUserProfile', JSON.stringify(profile));
-      setUser(profile);
+      // 2. 尝试从云端拉取用户信息 (登录逻辑)
+      let finalProfile = profile;
+      try {
+        const cloudUser = await fetchUser(profile.phoneNumber);
+        if (cloudUser && !cloudUser.error && cloudUser.name) {
+          // 用户已存在，使用云端资料覆盖
+          finalProfile = {
+            ...profile,
+            name: cloudUser.name,
+            avatar: cloudUser.avatar || '',
+            gender: cloudUser.gender || profile.gender
+          };
+          console.log("检测到老用户，已拉取云端资料");
+        }
+      } catch (e) {
+        // 忽略错误，说明可能是新用户或网络波动，继续执行同步(注册)
+        console.log("未检测到老用户或查询失败，将按新用户注册");
+      }
+
+      // 3. 同步到云端 (确保记录存在)
+      await syncUser(finalProfile);
+
+      localStorage.setItem('currentUserProfile', JSON.stringify(finalProfile));
+      setUser(finalProfile);
+
       if (activeTab === 'feed') {
         setActiveTab('tracker');
       }
-      showToast("登录成功", 'success');
+      showToast(finalProfile === profile ? "注册成功" : "欢迎回来！", 'success');
     } catch (err: any) {
       showToast(`登录/同步失败: ${err.message}`);
     }
