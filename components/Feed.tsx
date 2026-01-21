@@ -36,7 +36,6 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
   const [selectedPost, setSelectedPost] = useState<FeedPost | null>(null);
   const [viewerImages, setViewerImages] = useState<string[] | null>(null);
   const [viewerIndex, setViewerIndex] = useState(0);
-  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
 
   const loadFeed = async () => {
     try {
@@ -71,18 +70,7 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
     setViewerIndex(index);
   };
 
-  const handleLike = (postId: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setLikedPosts(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(postId)) {
-        newSet.delete(postId);
-      } else {
-        newSet.add(postId);
-      }
-      return newSet;
-    });
-  };
+
 
   const renderImages = (images: any, limit = 4) => {
     // 处理可能的字符串形式
@@ -124,7 +112,6 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
   };
 
   const renderPost = (post: FeedPost, isDetail = false) => {
-    const isLiked = likedPosts.has(post.id);
 
     return (
       <div
@@ -162,7 +149,7 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
               <span className="shrink-0">{post.time}</span>
               {post.mealType && (
                 <>
-                  <span className="w-1 h-1 rounded-full bg-gray-200 shrink-0" />
+
                   <span className={`bg-gradient-to-r ${getMealTypeColor(post.mealType)} text-transparent bg-clip-text font-bold`}>
                     {post.mealType}
                   </span>
@@ -233,16 +220,7 @@ export const Feed: React.FC<FeedProps> = ({ showToast, onNavigateToProfile, onNa
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-1">
-          <button
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${isLiked
-              ? 'bg-rose-50 text-rose-500 shadow-sm'
-              : 'bg-gray-50 text-gray-400 hover:text-rose-400'
-              }`}
-            onClick={(e) => handleLike(post.id, e)}
-          >
-            <Icons.Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-            <span className="text-xs font-bold">{post.likes + (isLiked ? 1 : 0)}</span>
-          </button>
+          <div className="flex-1" />
           {!isDetail && (
             <div className="flex items-center gap-1 text-[11px] text-blue-500 font-bold bg-blue-50 px-3 py-1.5 rounded-xl">
               <span>查看报告详情</span>
