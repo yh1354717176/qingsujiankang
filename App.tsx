@@ -11,7 +11,7 @@ import { DatePicker } from './components/DatePicker';
 import { ImageViewer } from './components/ImageViewer';
 import { MealType, FoodItem, DayLog, Tab, AnalysisResult, UserProfile } from './types';
 import { analyzeMeals, syncUser, syncMeal, fetchDayData, fetchUser } from './services/geminiService';
-import { compressImage } from './utils/imageHelper';
+import { compressImage, uploadToImgBB } from './utils/imageHelper';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import PullToRefresh from 'react-simple-pull-to-refresh';
@@ -284,12 +284,30 @@ const App: React.FC = () => {
       setFoodHistory(newHistory);
     }
 
+    // 上传图片到云端
+    let uploadedImageUrls = [...selectedImages];
+    if (selectedImages.length > 0) {
+      try {
+        const uploadPromises = selectedImages.map(async (img) => {
+          if (img.startsWith('data:image')) {
+            return await uploadToImgBB(img);
+          }
+          return img;
+        });
+        uploadedImageUrls = await Promise.all(uploadPromises);
+      } catch (uploadErr: any) {
+        showToast(`图片上传失败: ${uploadErr.message}`);
+        setIsSavingMeal(false);
+        return;
+      }
+    }
+
     // Logic: Create items from text. Attach ALL images to the first generated item.
     const newItems: FoodItem[] = lines.map((line, index) => ({
       id: generateId(),
       name: line,
       description: '',
-      images: index === 0 ? selectedImages : undefined // Attach images to the first item
+      images: index === 0 ? uploadedImageUrls : undefined // Attach images to the first item
     }));
 
     const updatedMeals = [...dayLog[currentMealType], ...newItems];
