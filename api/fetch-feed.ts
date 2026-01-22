@@ -32,7 +32,19 @@ export default async function handler(req: any, res: any) {
                 '' as "mealType",
                 (a.macros->>'calories')::int as calories,
                 0 as likes,
-                '[]'::json as images,
+                COALESCE(
+                    (
+                        SELECT json_agg(img.value)
+                        FROM (
+                            SELECT json_array_elements(ml.food_items::json) as item
+                            FROM qingshu_meal_logs ml
+                            WHERE ml.user_id = a.user_id AND ml.log_date = a.log_date
+                        ) items,
+                        json_array_elements(items.item->'images') img
+                        WHERE items.item->'images' IS NOT NULL AND img.value IS NOT NULL
+                    ),
+                    '[]'::json
+                ) as images,
                 a.plan as "aiAnalysis",
                 a.meal_feedback as "mealFeedback"
             FROM qingshu_analysis a

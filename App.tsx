@@ -471,8 +471,6 @@ const App: React.FC = () => {
   const handleAnalyze = async () => {
     setActiveTab('analysis');
     setIsAnalyzing(true);
-    setIsGlobalLoading(true);
-    setLoadingMessage('AI 正在深度分析中...');
     setError(null);
     setAnalysis(null);
 
