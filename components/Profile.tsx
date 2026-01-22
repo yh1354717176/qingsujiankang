@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { Icons } from './Icons';
-import { fetchHistory } from '../services/geminiService';
+import { fetchHistory, fetchWeights, syncWeight, analyzeWeightTrend } from '../services/geminiService';
 import { compressImage, uploadToImgBB } from '../utils/imageHelper';
 import PullToRefresh from 'react-simple-pull-to-refresh';
 import { PullToRefresh as CustomPullToRefresh } from './PullToRefresh';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 interface ProfileProps {
   user: UserProfile;
@@ -33,6 +34,15 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
   const [isSaving, setIsSaving] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
 
+  // 体重相关
+  const [weightList, setWeightList] = useState<{ date: string, weight: number }[]>([]);
+  const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
+  const [inputWeight, setInputWeight] = useState('');
+  const [isSavingWeight, setIsSavingWeight] = useState(false);
+  const [weightAnalysis, setWeightAnalysis] = useState<{ summary: string, status: string, advice: string } | null>(null);
+  const [isAnalyzingWeight, setIsAnalyzingWeight] = useState(false);
+  const [showWeightPanel, setShowWeightPanel] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadCloudHistory = async () => {
@@ -47,9 +57,21 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
     }
   };
 
-  // 初始加载历史
+  const loadWeights = async () => {
+    try {
+      const data = await fetchWeights(user.phoneNumber);
+      if (Array.isArray(data)) {
+        setWeightList(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch weights", err);
+    }
+  };
+
+  // 初始加载
   useEffect(() => {
     loadCloudHistory();
+    loadWeights();
   }, [user.phoneNumber]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,6 +127,43 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
     setEditGender(user.gender);
     setEditAvatar(user.avatar);
     setIsEditing(false);
+  };
+
+  const handleSaveWeight = async () => {
+    if (!inputWeight || isNaN(Number(inputWeight))) {
+      showToast("请输入有效数字", 'error');
+      return;
+    }
+    try {
+      setIsSavingWeight(true);
+      const today = new Date().toISOString().split('T')[0];
+      await syncWeight(user.phoneNumber, today, Number(inputWeight));
+      await loadWeights();
+      setIsWeightModalOpen(false);
+      setInputWeight('');
+      showToast("体重记录已更新", 'success');
+    } catch (err: any) {
+      showToast(`保存失败: ${err.message}`);
+    } finally {
+      setIsSavingWeight(false);
+    }
+  };
+
+  const handleAnalyzeWeight = async () => {
+    if (weightList.length < 2) {
+      showToast("需至少两条记录才能分析趋势", 'error');
+      return;
+    }
+    try {
+      setIsAnalyzingWeight(true);
+      const result = await analyzeWeightTrend(user.phoneNumber, weightList);
+      setWeightAnalysis(result);
+      showToast("AI 分析完成", 'success');
+    } catch (err: any) {
+      showToast(`分析失败: ${err.message}`);
+    } finally {
+      setIsAnalyzingWeight(false);
+    }
   };
 
   // 计算逻辑
@@ -260,6 +319,121 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
             </div>
           )}
 
+          {/* 体重管理板块 - 沉浸式图表设计 */}
+          {!isEditing && (
+            <div className="bg-white rounded-3xl shadow-lg border border-gray-50 overflow-hidden transition-all duration-300">
+              <div className="p-5 flex items-center justify-between border-b border-gray-50 bg-gradient-to-r from-blue-50/30 to-purple-50/30">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md">
+                    <Icons.Weight className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-800 text-sm">体重趋势分析</h3>
+                    <p className="text-[10px] text-gray-400 font-medium">最近的身体变化</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsWeightModalOpen(true)}
+                  className="bg-white text-blue-600 text-xs font-bold px-3 py-1.5 rounded-full border border-blue-100 shadow-sm active:scale-95 transition-all flex items-center gap-1"
+                >
+                  <Icons.Plus className="w-3 h-3" />
+                  记录体重
+                </button>
+              </div>
+
+              {weightList.length > 1 ? (
+                <div className="px-2 py-4">
+                  <div className="h-48 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={weightList} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                        <XAxis
+                          dataKey="date"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 10, fill: '#94a3b8' }}
+                          tickFormatter={(str: string) => str.split('-').slice(1).join('/')}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          domain={['dataMin - 1', 'dataMax + 1']}
+                          tick={{ fontSize: 10, fill: '#94a3b8' }}
+                        />
+                        <ChartTooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-white/90 backdrop-blur-md border border-gray-100 p-2.5 rounded-xl shadow-xl">
+                                  <p className="text-[10px] text-gray-400 mb-1 font-bold">{(payload[0].payload as any).date}</p>
+                                  <p className="text-sm font-black text-blue-600">{payload[0].value} <span className="text-[10px] font-normal">kg</span></p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="weight"
+                          stroke="#2563eb"
+                          strokeWidth={3}
+                          dot={{ r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }}
+                          activeDot={{ r: 6 }}
+                          animationDuration={1500}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* AI 分析触发按钮 */}
+                  <div className="px-4 pb-2">
+                    <button
+                      onClick={handleAnalyzeWeight}
+                      disabled={isAnalyzingWeight}
+                      className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100/50 py-3 rounded-2xl flex items-center justify-center gap-2 group active:scale-[0.98] transition-all"
+                    >
+                      {isAnalyzingWeight ? (
+                        <Icons.Loader className="w-4 h-4 animate-spin text-blue-600" />
+                      ) : (
+                        <Icons.Trending className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" />
+                      )}
+                      <span className="text-xs font-bold text-blue-700">
+                        {isAnalyzingWeight ? "正在解读趋势..." : "点击 AI 分析我的减肥状态"}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* AI 分析结果展示 */}
+                  {weightAnalysis && (
+                    <div className="mx-4 mb-4 p-4 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl text-white shadow-lg animate-in fade-in slide-in-from-top-4 duration-500">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">AI Coach</span>
+                        <div className="h-px flex-1 bg-white/20" />
+                        <span className="text-xs font-bold">{weightAnalysis.status}</span>
+                      </div>
+                      <p className="text-sm leading-relaxed mb-3 font-medium text-blue-50">
+                        {weightAnalysis.summary}
+                      </p>
+                      <div className="bg-white/10 p-3 rounded-xl border border-white/10">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-blue-200 mb-1">专业建议</div>
+                        <p className="text-xs leading-relaxed opacity-90">{weightAnalysis.advice}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-10 text-center">
+                  <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Icons.Weight className="w-8 h-8 text-gray-200" />
+                  </div>
+                  <p className="text-sm text-gray-400">还没有足够的体重记录</p>
+                  <p className="text-[10px] text-gray-300 mt-1">至少记录两次体重以生成趋势分析</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Menu Items */}
           {!isEditing && (
             <div className="bg-white rounded-2xl shadow-lg border border-gray-50 overflow-hidden">
@@ -368,6 +542,56 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
             </p>
           )}
         </div>
+
+        {/* Weight Input Modal */}
+        {isWeightModalOpen && (
+          <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300 backdrop-blur-sm">
+            <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-300 relative overflow-hidden">
+              {/* Decorative Background */}
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-purple-500" />
+
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-xl font-black text-gray-800">记录今日体重</h3>
+                  <p className="text-xs text-gray-400 mt-1 font-medium">保持记录，见证改变</p>
+                </div>
+                <button onClick={() => setIsWeightModalOpen(false)} className="text-gray-300 hover:text-gray-600 transition-colors">
+                  <Icons.Close className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="relative mb-8">
+                <input
+                  type="number"
+                  step="0.1"
+                  autoFocus
+                  value={inputWeight}
+                  onChange={(e) => setInputWeight(e.target.value)}
+                  placeholder="0.0"
+                  className="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl px-6 py-5 text-4xl font-black text-center focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-blue-600 placeholder:text-gray-200"
+                />
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 font-bold">kg</div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setIsWeightModalOpen(false)}
+                  className="py-4 rounded-2xl bg-gray-100 text-gray-500 font-bold active:scale-95 transition-all"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleSaveWeight}
+                  disabled={isSavingWeight || !inputWeight}
+                  className="py-4 rounded-2xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isSavingWeight ? <Icons.Loader className="w-5 h-5 animate-spin" /> : <Icons.Check className="w-5 h-5" />}
+                  保存记录
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </CustomPullToRefresh>
   );

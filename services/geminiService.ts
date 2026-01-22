@@ -153,3 +153,63 @@ export const fetchUser = async (phoneNumber: string) => {
   }
   return response.json();
 };
+
+/**
+ * @description 同步体重记录
+ */
+export const syncWeight = async (phoneNumber: string, logDate: string, weight: number) => {
+  const response = await fetch(`${BASE_URL}/api/sync-weight`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phoneNumber, logDate, weight }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    try {
+      const errorData = JSON.parse(errorText);
+      throw new Error(errorData.error || `同步体重失败: ${response.status}`);
+    } catch (e) {
+      throw new Error(`服务器体重同步失败 (500)`);
+    }
+  }
+  return response.json();
+};
+
+/**
+ * @description 获取体重历史
+ */
+export const fetchWeights = async (phoneNumber: string) => {
+  const params = new URLSearchParams({ phoneNumber });
+  const response = await fetch(`${BASE_URL}/api/fetch-weights?${params}`);
+  if (!response.ok) {
+    const errorText = await response.text();
+    try {
+      const errorData = JSON.parse(errorText);
+      throw new Error(errorData.error || `获取体重历史失败: ${response.status}`);
+    } catch (e) {
+      throw new Error(`服务器数据拉取失败 (500)`);
+    }
+  }
+  return response.json();
+};
+
+/**
+ * @description AI 分析体重趋势
+ */
+export const analyzeWeightTrend = async (phoneNumber: string, weights: any[]) => {
+  const response = await fetch(`${BASE_URL}/api/analyze-weight`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phoneNumber, weights }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    try {
+      const errorData = JSON.parse(errorText);
+      throw new Error(errorData.error || `分析失败: ${response.status}`);
+    } catch (e) {
+      throw new Error(`AI 分析请求失败 (500)`);
+    }
+  }
+  return response.json();
+};

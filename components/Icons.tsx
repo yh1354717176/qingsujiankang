@@ -31,7 +31,9 @@ import {
   History,
   AlertCircle,
   Check,
-  CheckCircle
+  CheckCircle,
+  Scale,
+  TrendingUp
 } from 'lucide-react';
 
 export const Icons = {
@@ -66,5 +68,7 @@ export const Icons = {
   History,
   AlertCircle,
   Check,
-  CheckCircle
+  CheckCircle,
+  Weight: Scale,
+  Trending: TrendingUp
 };
