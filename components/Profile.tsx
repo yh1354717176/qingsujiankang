@@ -341,6 +341,27 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, onLogout, 
                 </button>
               </div>
 
+              {/* 最新体重快速概览 - 无论记录多寡都显示 */}
+              <div className="px-5 py-4 flex items-baseline gap-2">
+                <span className="text-3xl font-black text-gray-900">
+                  {weightList.length > 0 ? weightList[weightList.length - 1].weight : '--'}
+                </span>
+                <span className="text-sm font-bold text-gray-400">kg</span>
+                {weightList.length > 1 && (
+                  <div className={`ml-auto flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold ${weightList[weightList.length - 1].weight <= weightList[weightList.length - 2].weight
+                      ? 'bg-green-50 text-green-600'
+                      : 'bg-red-50 text-red-600'
+                    }`}>
+                    {weightList[weightList.length - 1].weight <= weightList[weightList.length - 2].weight ? (
+                      <Icons.ChevronLeft className="w-3 h-3 rotate-90" />
+                    ) : (
+                      <Icons.ChevronRight className="w-3 h-3 -rotate-90" />
+                    )}
+                    {Math.abs(weightList[weightList.length - 1].weight - weightList[weightList.length - 2].weight).toFixed(1)}kg
+                  </div>
+                )}
+              </div>
+
               {weightList.length > 1 ? (
                 <div className="px-2 py-4">
                   <div className="h-48 w-full">

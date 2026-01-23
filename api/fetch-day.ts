@@ -41,6 +41,13 @@ export default async function handler(req: any, res: any) {
             WHERE user_id = ${userId} AND log_date = ${date}
         `;
 
+        // 获取该日体重记录
+        const weightLog = await sql`
+            SELECT weight 
+            FROM qingshu_weight_logs 
+            WHERE user_id = ${userId} AND log_date = ${date}
+        `;
+
         // 获取该日分析结果
         const analysis = await sql`
             SELECT macros, feedback, meal_feedback as "mealFeedback", plan 
@@ -50,7 +57,8 @@ export default async function handler(req: any, res: any) {
 
         res.status(200).json({
             segments,
-            analysis: analysis[0] || null
+            analysis: analysis[0] || null,
+            weight: weightLog[0]?.weight || null
         });
     } catch (error: any) {
         console.error("Fetch Day Detailed Error:", error);

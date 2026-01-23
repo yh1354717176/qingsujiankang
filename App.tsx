@@ -10,7 +10,7 @@ import { CalendarStrip } from './components/CalendarStrip';
 import { DatePicker } from './components/DatePicker';
 import { ImageViewer } from './components/ImageViewer';
 import { MealType, FoodItem, DayLog, Tab, AnalysisResult, UserProfile } from './types';
-import { analyzeMeals, syncUser, syncMeal, fetchDayData, fetchUser, fetchHistory } from './services/geminiService';
+import { analyzeMeals, syncUser, syncMeal, fetchDayData, fetchUser, fetchHistory, fetchWeights } from './services/geminiService';
 import { compressImage, uploadToImgBB } from './utils/imageHelper';
 import { Keyboard } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -185,6 +185,10 @@ const App: React.FC = () => {
           } else {
             setAnalysis(null);
           }
+
+          // 如果当天有体重记录，可以更新到本地 user 状态中（如果有需要显示的话）
+          // 这里我们主要依靠 loadHistoryDates 来点亮日历
+
         } catch (err) {
           console.error("Failed to fetch cloud data", err);
           showToast("加载数据失败，请检查网络或重试。");
@@ -215,11 +219,23 @@ const App: React.FC = () => {
   const loadHistoryDates = async () => {
     if (!user) return;
     try {
-      const history = await fetchHistory(user.phoneNumber);
+      // 同时获取饮食历史和体重历史
+      const [history, weights] = await Promise.all([
+        fetchHistory(user.phoneNumber),
+        fetchWeights(user.phoneNumber)
+      ]);
+
+      const dates = new Set<string>();
+
       if (Array.isArray(history)) {
-        const dates = new Set(history.map((item: any) => item.date));
-        setHistoryDates(dates);
+        history.forEach((item: any) => dates.add(item.date));
       }
+
+      if (Array.isArray(weights)) {
+        weights.forEach((item: any) => dates.add(item.date));
+      }
+
+      setHistoryDates(dates);
     } catch (err) {
       console.error("Failed to load history dates", err);
     }
